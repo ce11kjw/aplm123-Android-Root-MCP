@@ -78,8 +78,7 @@ fi
 
 rm -rf build/module
 cp -R module build/module
-cp "$ROOT/LICENSE" "$ROOT/build/module/LICENSE"
-"$PYTHON" "$ROOT/scripts/generate_notice.py" --repo "$ROOT" --output "$ROOT/build/module/NOTICE"
+"$PYTHON" "$ROOT/scripts/generate_notice.py" --repo "$ROOT" --license "$ROOT/build/module/LICENSE" --output "$ROOT/build/module/NOTICE"
 for abi in arm64-v8a armeabi-v7a x86_64; do
   mkdir -p "build/module/bin/$abi"
   cp "build/android/$abi/zcr521d" "build/module/bin/$abi/zcr521d"

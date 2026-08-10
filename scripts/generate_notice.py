@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the deterministic NOTICE file for the flashable module."""
+"""Stage canonical LICENSE and NOTICE files for the flashable module."""
 
 from __future__ import annotations
 
@@ -26,26 +26,39 @@ SECTIONS = (
 )
 
 
-def normalized_license(path: pathlib.Path) -> bytes:
-    return path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n").rstrip(b"\n")
+def normalized_bytes(path: pathlib.Path) -> bytes:
+    return path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
+def notice_license(path: pathlib.Path) -> bytes:
+    return normalized_bytes(path).rstrip(b"\n")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", required=True)
+    parser.add_argument("--license", required=True)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
     repo = pathlib.Path(args.repo).resolve()
-    output = pathlib.Path(args.output).resolve()
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("wb") as notice:
+    license_output = pathlib.Path(args.license).resolve()
+    notice_output = pathlib.Path(args.output).resolve()
+    license_output.parent.mkdir(parents=True, exist_ok=True)
+    notice_output.parent.mkdir(parents=True, exist_ok=True)
+
+    license_source = repo / "LICENSE"
+    if not license_source.is_file():
+        raise SystemExit(f"Required license is missing: {license_source}")
+    license_output.write_bytes(normalized_bytes(license_source))
+
+    with notice_output.open("wb") as notice:
         for name, relative in SECTIONS:
             source = repo / relative
             if not source.is_file():
                 raise SystemExit(f"Required legal notice is missing: {source}")
             notice.write(f"===== BEGIN {name} =====\n".encode("ascii"))
-            notice.write(normalized_license(source))
+            notice.write(notice_license(source))
             notice.write(f"\n===== END {name} =====\n\n".encode("ascii"))
 
 

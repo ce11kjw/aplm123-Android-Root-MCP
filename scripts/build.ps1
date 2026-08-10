@@ -183,40 +183,10 @@ try {
         Remove-Item -LiteralPath $ModuleStage -Recurse -Force
     }
     Copy-Item -LiteralPath (Join-Path $Repo "module") -Destination $ModuleStage -Recurse
-    Copy-Item -LiteralPath (Join-Path $Repo "LICENSE") -Destination (Join-Path $ModuleStage "LICENSE")
-    $LegalSections = [ordered]@{
-        "THIRD_PARTY_NOTICES" = (Join-Path $Repo "THIRD_PARTY_NOTICES.md")
-        "7ZIP_LICENSE" = (Join-Path $Repo "third_party\7zip\LICENSE-7ZIP.txt")
-        "LGPL_2_1" = (Join-Path $Repo "third_party\7zip\src\DOC\copying.txt")
-        "CODER_WEBSOCKET" = (Join-Path $Repo "vendor\github.com\coder\websocket\LICENSE.txt")
-        "MODELCONTEXTPROTOCOL_GO_SDK" = (Join-Path $Repo "vendor\github.com\modelcontextprotocol\go-sdk\LICENSE")
-        "ULIKUNITZ_XZ" = (Join-Path $Repo "vendor\github.com\ulikunitz\xz\LICENSE")
-        "GOOGLE_JSONSCHEMA_GO" = (Join-Path $Repo "vendor\github.com\google\jsonschema-go\LICENSE")
-        "SEGMENTIO_ASM" = (Join-Path $Repo "vendor\github.com\segmentio\asm\LICENSE")
-        "SEGMENTIO_ENCODING" = (Join-Path $Repo "vendor\github.com\segmentio\encoding\LICENSE")
-        "YOSIDA95_URITEMPLATE" = (Join-Path $Repo "vendor\github.com\yosida95\uritemplate\v3\LICENSE")
-        "GOLANG_X_NET" = (Join-Path $Repo "vendor\golang.org\x\net\LICENSE")
-        "GOLANG_X_OAUTH2" = (Join-Path $Repo "vendor\golang.org\x\oauth2\LICENSE")
-        "GOLANG_X_SYNC" = (Join-Path $Repo "vendor\golang.org\x\sync\LICENSE")
-        "GOLANG_X_SYS" = (Join-Path $Repo "vendor\golang.org\x\sys\LICENSE")
-        "GOLANG_X_TEXT" = (Join-Path $Repo "vendor\golang.org\x\text\LICENSE")
-        "GOLANG_X_TIME" = (Join-Path $Repo "vendor\golang.org\x\time\LICENSE")
+    & $PythonPath (Join-Path $Repo "scripts\generate_notice.py") --repo $Repo --license (Join-Path $ModuleStage "LICENSE") --output (Join-Path $ModuleStage "NOTICE")
+    if ($LASTEXITCODE -ne 0) {
+        throw "Legal staging failed."
     }
-    $NoticeBuilder = New-Object System.Text.StringBuilder
-    foreach ($LegalName in $LegalSections.Keys) {
-        $LegalSource = $LegalSections[$LegalName]
-        if (-not (Test-Path -LiteralPath $LegalSource)) {
-            throw "Required legal notice is missing: $LegalSource"
-        }
-        $LegalText = [IO.File]::ReadAllText($LegalSource).Replace("`r`n", "`n").Replace("`r", "`n").TrimEnd("`n")
-        [void]$NoticeBuilder.AppendLine("===== BEGIN $LegalName =====")
-        [void]$NoticeBuilder.Append($LegalText)
-        [void]$NoticeBuilder.AppendLine()
-        [void]$NoticeBuilder.AppendLine("===== END $LegalName =====")
-        [void]$NoticeBuilder.AppendLine()
-    }
-    $NoticeText = $NoticeBuilder.ToString().Replace("`r`n", "`n")
-    [IO.File]::WriteAllText((Join-Path $ModuleStage "NOTICE"), $NoticeText, [Text.UTF8Encoding]::new($false))
     foreach ($target in $Targets) {
         $TargetDir = Join-Path $ModuleStage ("bin\" + $target.ABI)
         New-Item -ItemType Directory -Force -Path $TargetDir | Out-Null
