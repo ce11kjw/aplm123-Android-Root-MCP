@@ -3,7 +3,7 @@ package buildinfo
 const (
 	Name               = "ZCR521 AI MCP"
 	ModuleID           = "zcr521.android.mcp"
-	DefaultVersion     = "0.01"
+	DefaultVersion     = "0.02"
 	ProtocolCurrent    = "2026-07-28"
 	ProtocolPrevious   = "2025-11-25"
 	ProtocolLegacySSE  = "2024-11-05"

@@ -1,11 +1,13 @@
 # ZCR521 AI MCP
 
-ZCR521 是面向 Android 8.0–16（API 26–36）的 Root MCP 服务。它把文件、Shell、应用、Root 模块、系统设置、设备控制、网络、诊断、定时和备份能力统一暴露为 48 个 MCP 工具，并同时支持：
+ZCR521 是面向 Android 8.0–16（API 26–36）的 Root MCP 服务。它把文件、Shell、应用、Root 模块、系统设置、设备控制、网络、诊断、定时、备份和渐进技能统一暴露为 49 个 MCP 工具，并同时支持：
 
 - MCP `2026-07-28` 无会话 Streamable HTTP 与 `server/discover`
 - 旧版 Streamable HTTP `initialize` / `notifications/initialized` / `ping`
 - `2024-11-05` HTTP+SSE `/sse` 与 `/messages`
 - `io.modelcontextprotocol/tasks` 的持久任务、进度、更新与取消
+- 内置网页自动化与低 Token MCP 技能自动匹配、正文按需加载，以及完成调用的脱敏长期记忆
+- 持久 Cookie、静态网页正文提取、系统浏览器截图、RSS/Atom 与 WebSocket
 - Windows、Linux、macOS 的 STDIO 桥
 
 ## 安装
@@ -27,7 +29,7 @@ APatch 官方只支持 ARM64，因此本模块仅声明 APatch `arm64-v8a` 兼�
 | `/transfer/download/{id}` | Range 流式下载 |
 | `/` | 无外部资源的只读状态页 |
 
-完整工具 Schema 在 [schemas/tools.json](schemas/tools.json)，协议说明在 [MCP 接口](docs/MCP.md)。
+完整工具 Schema 在 [schemas/tools.json](schemas/tools.json)，协议说明在 [MCP 接口](docs/MCP.md)，自动技能与长期记忆的事务/隐私设计见 [技能与长期记忆设计](docs/SKILLS-MEMORY.md)。
 
 服务启动后可执行：
 
@@ -44,6 +46,7 @@ flowchart LR
   B --> O["Go / procfs / netlink<br/>Android cmd 适配器"]
   S["supervisor<br/>崩溃退避与版本回滚"] --> F
   S --> B
+  B --> K["渐进技能索引<br/>完成调用脱敏收据"]
   B --> D["/data/adb/zcr521-mcp"]
   O --> U["/storage/emulated/0/zcr521AI"]
 ```
@@ -76,14 +79,17 @@ export ANDROID_NDK_HOME=/absolute/path/to/android-ndk-r29
 
 构建会执行测试、vendoring、三 ABI PIE/16 KiB ELF 验证、模块静态模拟和可复现 ZIP 打包，最终只生成可直接刷入的通用 ZIP；任何 ABI 缺失、空文件、非 ELF、页对齐错误或 `licenses` 子目录重新出现都会失败。构建与验证详情见 [测试报告](docs/TEST-REPORT.md)。
 
-最终 60 项验收证据与设备未测试边界见 [验收追踪表](docs/ACCEPTANCE.md)。
+最终 67 项验收证据与设备未测试边界见 [验收追踪表](docs/ACCEPTANCE.md)。
 
 ## 数据与卸载
 
 - 内部状态：`/data/adb/zcr521-mcp`
 - 用户数据：`/storage/emulated/0/zcr521AI`
+- MCP 调用收据与技能主副本：`/data/adb/zcr521-mcp/MCP`
+- 自动技能用户侧镜像：`/storage/emulated/0/zcr521AI/MCP/skills`
+- Cookie jar：`/data/adb/zcr521-mcp/network/cookie-jars`
 
-升级保留两处数据。卸载脚本只停止经 PID/命令行验证的本模块进程并删除内部状态；用户目录会保留。
+升级保留内部状态和用户目录。卸载脚本只停止经 PID/命令行验证的本模块进程并删除内部状态；用户目录及其中的自动技能镜像会保留。
 
 ## 许可证
 

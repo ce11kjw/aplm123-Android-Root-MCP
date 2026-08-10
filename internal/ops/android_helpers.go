@@ -87,6 +87,11 @@ func packageName(args map[string]any) (string, error) {
 	return value, nil
 }
 
+func looksLikePackage(value string) bool {
+	_, err := packageName(map[string]any{"package": value})
+	return err == nil
+}
+
 func componentName(args map[string]any) (string, error) {
 	value, err := argString(args, "component")
 	if err != nil {
@@ -110,6 +115,64 @@ func (m *Manager) runAndroidRoot(ctx context.Context, variants ...commandVariant
 		return *result
 	}
 	return runFirstAvailable(ctx, m, variants, m.cfg.ShellTimeout)
+}
+
+// resolveAndroidUser turns the ambiguous "current" alias into a numeric ID so
+// PackageManager never falls back to version-dependent all-user behavior.
+func (m *Manager) resolveAndroidUser(ctx context.Context, args map[string]any, allowAll bool) (string, error) {
+	user, err := androidUser(args)
+	if err != nil {
+		return "", err
+	}
+	if user == "all" {
+		if allowAll {
+			return user, nil
+		}
+		return "", errors.New("user=all is not allowed for this operation")
+	}
+	if user != "current" {
+		return user, nil
+	}
+	result := m.runAndroid(ctx,
+		commandVariant{Name: "cmd", Args: []string{"activity", "get-current-user"}, Strategy: "cmd_activity_current_user"},
+		commandVariant{Name: "am", Args: []string{"get-current-user"}, Strategy: "am_current_user"},
+	)
+	if !result.Success {
+		return "", errors.New(result.Error)
+	}
+	fields := strings.Fields(result.Stdout)
+	for index := len(fields) - 1; index >= 0; index-- {
+		id, parseErr := strconv.Atoi(strings.Trim(fields[index], "[]():,"))
+		if parseErr == nil && id >= 0 {
+			return strconv.Itoa(id), nil
+		}
+	}
+	return "", errors.New("current user command returned no numeric user ID")
+}
+
+func androidSemanticError(result Result) error {
+	if !result.Success {
+		if result.Error != "" {
+			return errors.New(result.Error)
+		}
+		return errors.New(result.Message)
+	}
+	combined := strings.ToLower(result.Stdout + "\n" + result.Stderr)
+	for _, marker := range []string{"error:", "failure [", "securityexception", "unable to resolve", "does not exist", "unknown package", "no activities found"} {
+		if strings.Contains(combined, marker) {
+			return errors.New(strings.TrimSpace(result.Stdout + "\n" + result.Stderr))
+		}
+	}
+	for _, line := range strings.Split(combined, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "status:") {
+			status := strings.TrimSpace(strings.TrimPrefix(line, "status:"))
+			if status != "ok" {
+				return fmt.Errorf("activity manager status=%s", status)
+			}
+		}
+	}
+	return nil
 }
 
 func withData(result Result, data any) Result {

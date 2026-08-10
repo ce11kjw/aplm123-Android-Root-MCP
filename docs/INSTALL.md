@@ -4,7 +4,7 @@
 
 - Android 8.0 / API 26 或更高。
 - 已安装 Magisk、KernelSU/KernelSU Next，或 ARM64 设备上的 APatch。
-- 安装包必须是正式版本中唯一的资源 `ZCR521-Android-AI-MCP-v0.01-universal.zip`。
+- 安装包必须是正式版本中唯一的资源 `ZCR521-Android-AI-MCP-v0.02-universal.zip`。
 
 模块不依赖 Zygisk。`post-fs-data.sh` 只做常量时间的目录准备，不启动服务；非阻塞启动位于 `service.sh`。
 
@@ -64,12 +64,14 @@ macOS：
 
 ```text
 作者:小骨@Xiaogu_zcr521
-当前版本: 0.01
+当前版本: 0.02
 ```
 
 MCP 地址保存在 `/data/adb/zcr521-mcp/MCP地址.txt`。安装完成时会尝试打开官方 Telegram `@Xiaogu_zcr521`，跳转结果不影响安装。
 
 ## 升级与回滚
+
+内置更新：模块安装后会包含 `update.sh`。以 root 执行 `sh /data/adb/modules/zcr521.android.mcp/update.sh` 会查询 GitHub Releases 最新版本，下载对应 `ZCR521-Android-AI-MCP-v<版本>-universal.zip`，校验模块 ID 后调用 Magisk/KernelSU/APatch 安装器。需要设备可访问 GitHub 且具备 curl 或 wget。
 
 升级安装保留内部状态与用户目录。supervisor 把新版本视为候选版本：
 

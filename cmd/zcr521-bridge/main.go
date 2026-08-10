@@ -27,7 +27,7 @@ import (
 const (
 	defaultMCPURL       = "http://127.0.0.1:5322/mcp"
 	defaultMessageLimit = 8 << 20
-	bridgeVersion       = "0.01"
+	bridgeVersion       = "0.02"
 )
 
 type config struct {

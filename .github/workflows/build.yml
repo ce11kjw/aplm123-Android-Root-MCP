@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       SOURCE_DATE_EPOCH: "1785340800"
-      VERSION: "0.01"
+      VERSION: "0.02"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -29,6 +29,6 @@ jobs:
         run: sh ./scripts/build-ci.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: ZCR521-Android-AI-MCP-v0.01
+          name: ZCR521-Android-AI-MCP-v0.02
           path: dist/
           if-no-files-found: error

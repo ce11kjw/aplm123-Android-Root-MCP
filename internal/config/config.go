@@ -103,7 +103,7 @@ func Default() Config {
 			ShellTimeoutSeconds:   120,
 			TransferChunkBytes:    4 << 20,
 			TransferMaxBytes:      0,
-			ResultPreviewBytes:    1 << 20,
+			ResultPreviewBytes:    64 << 10,
 			ArtifactTTLSeconds:    3600,
 			ShutdownGraceSeconds:  15,
 			UploadIdleTTLSeconds:  86400,
@@ -160,6 +160,9 @@ func (c Config) Validate() error {
 	}
 	if c.Limits.MaxRequestBytes < c.Limits.TransferChunkBytes {
 		problems = append(problems, "limits.maxRequestBytes 不得小于传输块")
+	}
+	if c.Limits.ResultPreviewBytes < 4<<10 || c.Limits.ResultPreviewBytes > 1<<20 {
+		problems = append(problems, "limits.resultPreviewBytes 必须在 4 KiB..1 MiB")
 	}
 	if c.Security.AllowCORS {
 		problems = append(problems, "本版本禁止开放 CORS")

@@ -20,7 +20,7 @@ type Result struct {
 	RebootRequired bool           `json:"rebootRequired"`
 	Artifacts      []Artifact     `json:"artifacts"`
 	Strategy       string         `json:"strategy"`
-	Meta           map[string]any `json:"-"`
+	Meta           map[string]any `json:"_meta,omitempty"`
 }
 
 type Error struct {

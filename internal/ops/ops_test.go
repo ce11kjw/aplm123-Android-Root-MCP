@@ -32,7 +32,7 @@ func testManager(t *testing.T) *Manager {
 
 func TestAllPublicToolsAreDispatched(t *testing.T) {
 	manager := testManager(t)
-	if got, want := len(SupportedTools()), 48; got != want {
+	if got, want := len(SupportedTools()), 49; got != want {
 		t.Fatalf("public tool count = %d, want %d", got, want)
 	}
 	for _, tool := range SupportedTools() {

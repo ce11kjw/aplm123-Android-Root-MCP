@@ -415,6 +415,16 @@ func (h TasksHandler) callToolAsTask(ctx context.Context, params map[string]any)
 		return nil, err
 	}
 	created["resultType"] = "task"
+	if len(result.Meta) > 0 {
+		meta, _ := created["_meta"].(map[string]any)
+		if meta == nil {
+			meta = map[string]any{}
+		}
+		for key, value := range result.Meta {
+			meta[key] = value
+		}
+		created["_meta"] = meta
+	}
 	return created, nil
 }
 
@@ -593,7 +603,7 @@ func taskOutputResult(value any) (map[string]any, error) {
 }
 
 func toolCallResult(result model.Result) map[string]any {
-	raw, _ := json.Marshal(toolResult(result))
+	raw, _ := json.Marshal(toolResult(result, true))
 	value := map[string]any{}
 	_ = json.Unmarshal(raw, &value)
 	return completeResult(value)

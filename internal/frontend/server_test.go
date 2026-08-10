@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -231,6 +232,52 @@ func TestNetworkBoundaryAndCORS(t *testing.T) {
 				t.Fatalf("unexpected CORS header %q", value)
 			}
 		})
+	}
+}
+
+func TestLANHostStatusAndMCP(t *testing.T) {
+	options := testOptions(t)
+	options.ListenAddr = "0.0.0.0"
+	server, err := New(options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixed := time.Unix(1, 0)
+	server.access.now = func() time.Time { return fixed }
+	server.access.cached = networkState{
+		ips:      []net.IP{net.ParseIP("192.168.1.20"), net.ParseIP("127.0.0.1")},
+		networks: []*net.IPNet{{IP: net.ParseIP("192.168.1.0"), Mask: net.CIDRMask(24, 32)}},
+		at:       fixed,
+	}
+
+	statusRequest := httptest.NewRequest(http.MethodGet, "http://192.168.1.20:5322/status", nil)
+	statusRequest.Host = "192.168.1.20:5322"
+	statusRequest.RemoteAddr = "192.168.1.42:41000"
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, statusRequest)
+	if response.Code != http.StatusOK {
+		t.Fatalf("LAN status = %d %s", response.Code, response.Body.String())
+	}
+	var status map[string]any
+	if err := json.Unmarshal(response.Body.Bytes(), &status); err != nil {
+		t.Fatal(err)
+	}
+	if got := status["mcpAddress"]; got != "http://192.168.1.20:5322/mcp" {
+		t.Fatalf("mcpAddress = %#v", got)
+	}
+	for _, removed := range []string{"localMCPAddress", "lanMCPAddress", "mcpEnabled"} {
+		if _, exists := status[removed]; exists {
+			t.Fatalf("status unexpectedly contains %q", removed)
+		}
+	}
+
+	mcpRequest := httptest.NewRequest(http.MethodPost, "http://192.168.1.20:5322/mcp", strings.NewReader(`{}`))
+	mcpRequest.Host = "192.168.1.20:5322"
+	mcpRequest.RemoteAddr = "192.168.1.42:41000"
+	mcpResponse := httptest.NewRecorder()
+	server.ServeHTTP(mcpResponse, mcpRequest)
+	if mcpResponse.Code != http.StatusOK || mcpResponse.Header().Get("X-Test-Handler") == "" {
+		t.Fatalf("LAN MCP = %d %s", mcpResponse.Code, mcpResponse.Body.String())
 	}
 }
 

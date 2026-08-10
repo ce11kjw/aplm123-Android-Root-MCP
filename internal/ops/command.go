@@ -16,8 +16,6 @@ import (
 	"time"
 )
 
-const inlineOutputLimit = 1024 * 1024
-
 type commandSpec struct {
 	Name          string
 	Args          []string
@@ -112,6 +110,7 @@ func (m *Manager) runCommand(ctx context.Context, spec commandSpec) Result {
 	logDir := filepath.Join(m.cfg.StateDir, "task-logs")
 	stdoutPath := filepath.Join(logDir, id+".stdout")
 	stderrPath := filepath.Join(logDir, id+".stderr")
+	inlineOutputLimit := int(m.cfg.ResultPreviewBytes)
 	stdout, err := newBoundedLog(stdoutPath, inlineOutputLimit)
 	if err != nil {
 		return fail("IO_ERROR", "无法创建标准输出日志", err, "command")

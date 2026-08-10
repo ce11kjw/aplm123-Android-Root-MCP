@@ -33,9 +33,18 @@
 - 卸载脚本在发信号前检查 PID 与 `/proc/<pid>/cmdline`。
 - 不自动禁用 SELinux、不默认 remount 系统分区。
 
+## 认证状态与长期记忆
+
+- 命名 Cookie jar 以 `0600` 原子文件保存在内部 Root 状态目录；值默认不通过 MCP 返回，只有 `includeValues=true` 且 `confirmSensitive=true` 才显式读取。
+- Authorization 不持久化；跨源重定向会剥离 Authorization、Cookie 等敏感请求头，TLS 证书验证不可关闭。
+- 长期记忆对 Authorization、Cookie、Token、密码、secret、headers、env、stdin、body、content、data、WebSocket 消息及通用 value 只保存类型和长度；URL、主机和路径只保存结构，产物扩展名使用白名单。不会记录完整 stdout、stderr、产物文件名或响应体；递归模板受深度、节点数和 8 KiB 大小限制，未知字符串默认脱敏。
+- 后台任务完成防重放不使用有误判概率的 Bloom filter，而使用带整体校验和的精确 SHA-256 任务 ID 集合；账本损坏时停止自动恢复，不以“可能没完成”为由重做任务。
+- 系统浏览器拥有独立的 Cookie/账号空间；`browser_capture` 不注入 MCP Cookie jar，也不会自动填写凭据。
+- WebSocket 有连接数、消息大小和接收队列上限，服务关闭即断开，不自动重连或重发非幂等消息。
+
 ## 建议加固
 
-当前 0.01 为满足锁定默认值，不启用 Token。生产环境至少采取一项：
+当前 0.02 为保持既有默认行为，不启用 Token。生产环境至少采取一项：
 
 1. 关闭 LAN，只使用 `adb forward`。
 2. 在可信 VPN/私有 USB 网络中使用。

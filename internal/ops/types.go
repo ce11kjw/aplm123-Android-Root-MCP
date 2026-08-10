@@ -42,9 +42,10 @@ type Result struct {
 
 // Config configures an operation Manager.
 type Config struct {
-	WorkDir      string
-	StateDir     string
-	ShellTimeout time.Duration
+	WorkDir            string
+	StateDir           string
+	ShellTimeout       time.Duration
+	ResultPreviewBytes int64
 }
 
 // Manager owns the operation configuration and background task registry.
@@ -61,6 +62,9 @@ type Manager struct {
 	scheduleEventMu      sync.Mutex
 	scheduleEventCancels map[string]context.CancelFunc
 	scheduleEventErrors  map[string]string
+	networkOnce          sync.Once
+	network              *networkRuntime
+	closeOnce            sync.Once
 }
 
 // New returns a self-contained operation manager. Existing user content is
@@ -76,6 +80,9 @@ func New(cfg Config) *Manager {
 	if cfg.ShellTimeout <= 0 {
 		cfg.ShellTimeout = 60 * time.Second
 	}
+	if cfg.ResultPreviewBytes < 4<<10 || cfg.ResultPreviewBytes > 1<<20 {
+		cfg.ResultPreviewBytes = 64 << 10
+	}
 	return &Manager{
 		cfg:                  cfg,
 		tasks:                make(map[string]*taskState),
@@ -86,6 +93,13 @@ func New(cfg Config) *Manager {
 		scheduleEventCancels: make(map[string]context.CancelFunc),
 		scheduleEventErrors:  make(map[string]string),
 	}
+}
+
+// Close releases bounded network sessions owned by the manager.
+func (m *Manager) Close() {
+	m.closeOnce.Do(func() {
+		m.networkState().close()
+	})
 }
 
 func defaultWorkDir() string {

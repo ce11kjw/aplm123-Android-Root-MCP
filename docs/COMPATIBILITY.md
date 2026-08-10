@@ -43,3 +43,7 @@
 - APatch：OverlayFS 模块布局；理论兼容未测试。
 - KernelSU：存在 metamodule 时生成覆盖；没有 metamodule 时，只对已存在目标提供可重放 bind mount，新增目录返回 `UNSUPPORTED`。
 - 厂商 ROM、init 服务名、命令参数和 SELinux 域均以启动探测为准；单项失败不关闭基础 MCP、Root Shell 和文件能力。
+
+## 网页能力
+
+- 静态网页、RSS/Atom 与 Cookie/WebSocket 为纯 Go 能力。动态网页截图依赖真实 Android 系统浏览器、`screencap` 与 UIAutomator；不是内嵌 Chromium/WebView，也不共享浏览器认证。

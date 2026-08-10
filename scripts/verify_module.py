@@ -8,10 +8,17 @@ import hashlib
 import io
 import pathlib
 import stat
+import struct
 import zipfile
 
 
 ABIS = ("arm64-v8a", "armeabi-v7a", "x86_64")
+ELF_IDENTITIES = {
+    "arm64-v8a": (2, 183),
+    "armeabi-v7a": (1, 40),
+    "x86_64": (2, 62),
+}
+ANDROID_PAGE_SIZE = 16384
 REQUIRED = (
     "module.prop",
     "customize.sh",
@@ -21,6 +28,90 @@ REQUIRED = (
     "META-INF/com/google/android/update-binary",
     "META-INF/com/google/android/updater-script",
 )
+LEGAL_REQUIRED = (
+    "LICENSE",
+    "NOTICE",
+)
+LICENSE_SHA256 = "cde3a5c4c116f8cde7ba83ee7a4a885bc591164195b6123bfcbcdc3a52f9a88c"
+EXPECTED_ENTRIES = set(
+    REQUIRED
+    + LEGAL_REQUIRED
+    + ("common.sh", "post-fs-data.sh", "systemless.sh", "update.sh")
+    + tuple(f"bin/{abi}/{binary}" for abi in ABIS for binary in ("zcr521d", "7zz"))
+)
+NOTICE_SECTIONS = {
+    "THIRD_PARTY_NOTICES": "2aa145dbe7c71d1f1c7fda3388d462140bc7c3cab4dc731a4fb0fe6483fd305e",
+    "7ZIP_LICENSE": "21ac9ac12b25c8cb7afaf19b2c9ccdf19398c9f84cb691859e173a02426254df",
+    "LGPL_2_1": "a1a33180d02960ab1c5de36cf20b1a2f0fe9888d83826ad263da5db52f1b183b",
+    "CODER_WEBSOCKET": "f5b036075a5acd58de760ea87d94161d0e9d61593ed7ec3f16680450f095944d",
+    "MODELCONTEXTPROTOCOL_GO_SDK": "d426d9220d23d163453059ef4d79a327f3253e9ae76c7ea87036a4fe57c1d783",
+    "ULIKUNITZ_XZ": "bd2eccb7489d183d2cd2cf17a61d259dd2fede1a2b406fe410b6d8e6ca138129",
+    "GOOGLE_JSONSCHEMA_GO": "0fbd0ba52f6c09ab5aa6f5341c9c158e21dd9b5f23a6a835c40af88caecc184e",
+    "SEGMENTIO_ASM": "8ead3a576df03654e934d426cb2e100a6ba87cb7cc10f5f63e7a82f6327d8fe9",
+    "SEGMENTIO_ENCODING": "f908c9962b8c37d9c0a0da415eb3774dff30f5747ed86c147c45f09b9f154599",
+    "YOSIDA95_URITEMPLATE": "881631f6023fd4cfb0b21a60e53c0c824cac18ed15baeda01c84334d168a3968",
+    "GOLANG_X_NET": "22975ebe413674bc619428a26e53412013dccffa69e2f27100dbd8d946fde287",
+    "GOLANG_X_OAUTH2": "22975ebe413674bc619428a26e53412013dccffa69e2f27100dbd8d946fde287",
+    "GOLANG_X_SYNC": "22975ebe413674bc619428a26e53412013dccffa69e2f27100dbd8d946fde287",
+    "GOLANG_X_SYS": "22975ebe413674bc619428a26e53412013dccffa69e2f27100dbd8d946fde287",
+    "GOLANG_X_TEXT": "22975ebe413674bc619428a26e53412013dccffa69e2f27100dbd8d946fde287",
+    "GOLANG_X_TIME": "22975ebe413674bc619428a26e53412013dccffa69e2f27100dbd8d946fde287",
+}
+
+
+def verify_android_elf(data: bytes, name: str, abi: str) -> None:
+    if len(data) < 20 or data[:4] != b"\x7fELF":
+        raise SystemExit(f"{name} 不是非空 ELF")
+    elf_class = data[4]
+    endian = data[5]
+    expected_class, expected_machine = ELF_IDENTITIES[abi]
+    if elf_class != expected_class or endian not in (1, 2):
+        raise SystemExit(f"{name} ELF class/endian 与 {abi} 不匹配")
+    order = "<" if endian == 1 else ">"
+    try:
+        e_type, e_machine = struct.unpack_from(order + "HH", data, 16)
+        if elf_class == 2:
+            if len(data) < 64:
+                raise struct.error("ELF64 header truncated")
+            phoff = struct.unpack_from(order + "Q", data, 32)[0]
+            phentsize, phnum = struct.unpack_from(order + "HH", data, 54)
+            program_format = order + "IIQQQQQQ"
+        else:
+            if len(data) < 52:
+                raise struct.error("ELF32 header truncated")
+            phoff = struct.unpack_from(order + "I", data, 28)[0]
+            phentsize, phnum = struct.unpack_from(order + "HH", data, 42)
+            program_format = order + "IIIIIIII"
+    except struct.error as error:
+        raise SystemExit(f"{name} ELF 头无效: {error}") from error
+    if e_type != 3:
+        raise SystemExit(f"{name} 不是 ET_DYN PIE: e_type={e_type}")
+    if e_machine != expected_machine:
+        raise SystemExit(f"{name} e_machine={e_machine}，期望 {expected_machine}")
+    expected_entry_size = struct.calcsize(program_format)
+    if phnum == 0 or phentsize < expected_entry_size:
+        raise SystemExit(f"{name} program header 表无效")
+    if phoff > len(data) or phnum > (len(data) - phoff) // phentsize:
+        raise SystemExit(f"{name} program header 表越界")
+    load_count = 0
+    for index in range(phnum):
+        start = phoff + index * phentsize
+        fields = struct.unpack_from(program_format, data, start)
+        if fields[0] != 1:
+            continue
+        load_count += 1
+        if elf_class == 2:
+            _, _, offset, virtual_address, _, _, _, alignment = fields
+        else:
+            _, offset, virtual_address, _, _, _, _, alignment = fields
+        if alignment < ANDROID_PAGE_SIZE:
+            raise SystemExit(
+                f"{name} LOAD[{index}] p_align={alignment} 小于 {ANDROID_PAGE_SIZE}"
+            )
+        if offset % ANDROID_PAGE_SIZE != virtual_address % ANDROID_PAGE_SIZE:
+            raise SystemExit(f"{name} LOAD[{index}] 不满足 16 KiB 同余")
+    if load_count == 0:
+        raise SystemExit(f"{name} 没有 PT_LOAD 段")
 
 
 def main() -> None:
@@ -31,10 +122,36 @@ def main() -> None:
     if not path.is_file():
         raise SystemExit(f"ZIP 不存在: {path}")
     with zipfile.ZipFile(path) as archive:
-        names = set(archive.namelist())
-        for name in REQUIRED:
+        entry_names = archive.namelist()
+        names = set(entry_names)
+        if len(entry_names) != len(names):
+            raise SystemExit("ZIP 含重复条目")
+        for name in REQUIRED + LEGAL_REQUIRED:
             if name not in names:
                 raise SystemExit(f"ZIP 缺少 {name}")
+            if not archive.read(name):
+                raise SystemExit(f"ZIP 中 {name} 为空")
+        text_entries = [
+            name for name in names if pathlib.PurePosixPath(name).suffix.lower() in {".txt", ".md"}
+        ]
+        if text_entries:
+            raise SystemExit(f"ZIP 仍含分散文本文件: {sorted(text_entries)}")
+        if names != EXPECTED_ENTRIES:
+            missing = sorted(EXPECTED_ENTRIES - names)
+            unexpected = sorted(names - EXPECTED_ENTRIES)
+            raise SystemExit(f"ZIP 条目集合不精确: missing={missing} unexpected={unexpected}")
+        if hashlib.sha256(archive.read("LICENSE")).hexdigest() != LICENSE_SHA256:
+            raise SystemExit("LICENSE 与项目固定许可证原文不一致")
+        notice = archive.read("NOTICE")
+        for label, expected_digest in NOTICE_SECTIONS.items():
+            begin = f"===== BEGIN {label} =====\n".encode("utf-8")
+            end = f"\n===== END {label} =====".encode("utf-8")
+            if notice.count(begin) != 1 or notice.count(end) != 1:
+                raise SystemExit(f"NOTICE 的 {label} 分段缺失或重复")
+            start = notice.index(begin) + len(begin)
+            stop = notice.index(end, start)
+            if hashlib.sha256(notice[start:stop]).hexdigest() != expected_digest:
+                raise SystemExit(f"NOTICE 的 {label} 分段与固定许可证原文不一致")
         prop_data = archive.read("module.prop")
         prop_digest = hashlib.sha256(prop_data).hexdigest().encode("ascii")
         for abi in ABIS:
@@ -43,8 +160,7 @@ def main() -> None:
                 if name not in names:
                     raise SystemExit(f"ZIP 缺少 {name}")
                 data = archive.read(name)
-                if len(data) == 0 or data[:4] != b"\x7fELF":
-                    raise SystemExit(f"{name} 不是非空 ELF")
+                verify_android_elf(data, name, abi)
                 mode = archive.getinfo(name).external_attr >> 16
                 if mode & stat.S_IXUSR == 0:
                     raise SystemExit(f"{name} 没有执行位")
@@ -66,8 +182,8 @@ def main() -> None:
         expected_prop = (
             "id=zcr521.android.mcp\n"
             "name=ZCR521 AI MCP\n"
-            "version=0.01\n"
-            "versionCode=1\n"
+            "version=0.02\n"
+            "versionCode=2\n"
             "author=小骨@Xiaogu_zcr521\n"
             "description=通用 root MCP扩展 （让AI管理手机）\n"
         )
@@ -77,7 +193,7 @@ def main() -> None:
         for forbidden in ("音量加", "音量减", "查看 MCP 运行状态", "启动服务", "恢复默认配置"):
             if forbidden in action:
                 raise SystemExit("action.sh 仍含旧操作菜单")
-        if "作者:小骨@Xiaogu_zcr521" not in action or "当前版本: 0.01" not in action:
+        if "作者:小骨@Xiaogu_zcr521" not in action or "当前版本: 0.02" not in action:
             raise SystemExit("action.sh 未显示指定作者或版本")
         if "zcr_print_summary" not in action:
             raise SystemExit("action.sh 未保留运行摘要")

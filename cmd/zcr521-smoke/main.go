@@ -94,8 +94,8 @@ func main() {
 	if err != nil {
 		exitError(fmt.Errorf("tools/list: %w", err))
 	}
-	if len(list.Tools) != 48 {
-		exitError(fmt.Errorf("tools/list returned %d tools, want 48", len(list.Tools)))
+	if len(list.Tools) != 49 {
+		exitError(fmt.Errorf("tools/list returned %d tools, want 49", len(list.Tools)))
 	}
 	available := make(map[string]bool, len(list.Tools))
 	for _, tool := range list.Tools {
@@ -106,8 +106,8 @@ func main() {
 	filePath := runID + "/probe.txt"
 	archivePath := runID + "/probe.zip"
 	probes := acceptanceProbes(filePath, archivePath)
-	if len(probes) != 48 {
-		exitError(fmt.Errorf("internal probe count=%d, want 48", len(probes)))
+	if len(probes) != 49 {
+		exitError(fmt.Errorf("internal probe count=%d, want 49", len(probes)))
 	}
 	for _, item := range probes {
 		if !available[item.name] {
@@ -197,6 +197,7 @@ func acceptanceProbes(filePath, archivePath string) []probe {
 		{"zcr521_capabilities", map[string]any{"action": "get"}, true},
 		{"zcr521_config", map[string]any{"action": "get"}, true},
 		{"zcr521_task", map[string]any{"action": "list"}, true},
+		{"zcr521_skill", map[string]any{"action": "stats"}, true},
 		{"zcr521_schedule", map[string]any{"action": "list"}, true},
 		{"zcr521_backup", map[string]any{"action": "list"}, true},
 		{"zcr521_network", map[string]any{"action": "interfaces"}, true},
@@ -259,10 +260,18 @@ func callTool(
 		return model.Result{}, false, err
 	}
 	var raw string
-	for _, content := range result.Content {
-		if text, ok := content.(*mcp.TextContent); ok {
-			raw = text.Text
-			break
+	if result.StructuredContent != nil {
+		encoded, encodeErr := json.Marshal(result.StructuredContent)
+		if encodeErr != nil {
+			return model.Result{}, result.IsError, encodeErr
+		}
+		raw = string(encoded)
+	} else {
+		for _, content := range result.Content {
+			if text, ok := content.(*mcp.TextContent); ok {
+				raw = text.Text
+				break
+			}
 		}
 	}
 	if raw == "" {

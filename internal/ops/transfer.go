@@ -199,7 +199,7 @@ func downloadAttempt(parent context.Context, rawURL, path string, headers map[st
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
-		return offset, 0, err
+		return offset, 0, sanitizeNetworkError(err, rawURL)
 	}
 	request.Header.Set("User-Agent", "ZCR521-Android-AI-MCP/1")
 	for key, value := range headers {
@@ -208,23 +208,16 @@ func downloadAttempt(parent context.Context, rawURL, path string, headers map[st
 	if offset > 0 {
 		request.Header.Set("Range", "bytes="+strconv.FormatInt(offset, 10)+"-")
 	}
+	transport := boundedHTTPTransport()
+	defer transport.CloseIdleConnections()
 	client := &http.Client{
-		Timeout: timeout,
-		CheckRedirect: func(next *http.Request, via []*http.Request) error {
-			if len(via) >= 10 {
-				return errors.New("重定向次数超过 10")
-			}
-			for key, values := range via[0].Header {
-				for _, value := range values {
-					next.Header.Add(key, value)
-				}
-			}
-			return nil
-		},
+		Timeout:       timeout,
+		CheckRedirect: safeRedirectPolicy,
+		Transport:     transport,
 	}
 	response, err := client.Do(request)
 	if err != nil {
-		return offset, 0, err
+		return offset, 0, sanitizeNetworkError(err, rawURL)
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {

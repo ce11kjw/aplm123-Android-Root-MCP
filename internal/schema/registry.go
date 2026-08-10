@@ -56,10 +56,11 @@ var specs = []spec{
 	{"zcr521_shell", "以 root、shell 或指定 UID 执行命令。", []string{"exec"}, rw(true)},
 	{"zcr521_script", "验证或执行多行脚本。", []string{"validate", "run"}, rw(true)},
 	{"zcr521_task", "读取、列出、更新、取消任务或读取日志。", []string{"get", "list", "update", "cancel", "logs"}, rw(false)},
-	{"zcr521_app_list", "列出普通、系统或指定用户应用。", []string{"list"}, ro()},
-	{"zcr521_app_info", "读取应用、组件与权限详情。", []string{"get", "components", "permissions"}, ro()},
+	{"zcr521_skill", "渐进匹配、按需读取并管理内置及自动学习技能。", []string{"match", "get", "list", "stats", "forget"}, rw(false)},
+	{"zcr521_app_list", "按显示名或包名查询普通、系统或指定用户应用。", []string{"list"}, ro()},
+	{"zcr521_app_info", "按显示名、包名或组件读取应用、组件与权限详情。", []string{"get", "components", "permissions"}, ro()},
 	{"zcr521_app_install", "通过 Package Manager session 安装 APK/Split/APKS/XAPK。", []string{"apk", "split", "apks", "xapk", "session"}, heavy(true)},
-	{"zcr521_app_manage", "启动、停止、清理、启停、卸载及多用户管理应用。", []string{"launch", "stop", "clear_cache", "clear_data", "enable", "disable", "uninstall", "user"}, rw(true)},
+	{"zcr521_app_manage", "按显示名、包名或组件启动应用，并管理精确包名对应的应用。", []string{"launch", "stop", "clear_cache", "clear_data", "enable", "disable", "uninstall", "user"}, rw(true)},
 	{"zcr521_app_permission", "列出、授予、撤销权限或管理 AppOps。", []string{"list", "grant", "revoke", "appops"}, rw(true)},
 	{"zcr521_app_export", "导出 APK、Split 或应用包。", []string{"apk", "splits", "bundle"}, heavy(false)},
 	{"zcr521_root_info", "检测 Root 框架、能力与运行时自检。", []string{"detect", "capabilities", "self_test"}, ro()},
@@ -83,7 +84,7 @@ var specs = []spec{
 	{"zcr521_power", "重启到系统/Recovery/Bootloader/Fastbootd 或关机。", []string{"reboot", "recovery", "bootloader", "fastbootd", "shutdown", "soft_reboot"}, rw(true)},
 	{"zcr521_screen", "截图、录屏、前台 Activity、唤醒或休眠。", []string{"screenshot", "record", "foreground", "wake", "sleep"}, rw(true)},
 	{"zcr521_input", "点击、滑动、输入文本、按键与状态栏操作。", []string{"tap", "swipe", "text", "keyevent", "statusbar"}, rw(true)},
-	{"zcr521_network", "接口、路由、DNS、Ping、HTTP、端口、连接、Wi-Fi 与代理。", []string{"interfaces", "routes", "dns", "ping", "resolve", "http", "ports", "connections", "wifi", "proxy", "connectivity"}, rw(false)},
+	{"zcr521_network", "网络诊断、持久 HTTP/Cookie、HTML/浏览器捕获、RSS/Atom 与 WebSocket。", []string{"interfaces", "routes", "dns", "ping", "resolve", "http", "ports", "connections", "wifi", "proxy", "connectivity", "web_extract", "browser_capture", "feed_parse", "cookie_list", "cookie_set", "cookie_delete", "cookie_clear", "ws_connect", "ws_send", "ws_receive", "ws_ping", "ws_close", "ws_list"}, rw(false)},
 	{"zcr521_log", "读取 Logcat、内核、dmesg、模块/MCP 日志或实时流。", []string{"logcat", "kernel", "dmesg", "module", "mcp", "stream", "clear"}, rw(false)},
 	{"zcr521_diagnostics", "执行自检或生成完整诊断报告。", []string{"self_test", "collect"}, heavy(false)},
 	{"zcr521_schedule", "管理一次、周期、Cron 及事件触发任务。", []string{"list", "create", "update", "remove", "enable", "disable", "run"}, rw(true)},
@@ -107,6 +108,7 @@ var toolTitles = map[string]string{
 	"zcr521_shell":           "执行命令",
 	"zcr521_script":          "执行脚本",
 	"zcr521_task":            "任务管理",
+	"zcr521_skill":           "技能与记忆",
 	"zcr521_app_list":        "应用列表",
 	"zcr521_app_info":        "应用信息",
 	"zcr521_app_install":     "安装应用",
@@ -161,11 +163,12 @@ var toolParameters = map[string][]string{
 	"zcr521_transfer_export": {"taskId", "artifactIndex", "index", "path", "destination", "output", "background"},
 	"zcr521_shell":           {"command", "cmd", "cwd", "workDir", "env", "stdin", "timeout", "timeoutMs", "identity", "user", "uid", "gid", "background"},
 	"zcr521_script":          {"script", "content", "path", "cwd", "workDir", "env", "stdin", "timeout", "timeoutMs", "identity", "user", "uid", "gid", "background"},
-	"zcr521_task":            {"taskId", "id", "progress", "message", "limit"},
-	"zcr521_app_list":        {"user", "query", "system"},
-	"zcr521_app_info":        {"package", "packageName", "component", "user"},
+	"zcr521_task":            {"taskId", "id", "progress", "message", "limit", "offset"},
+	"zcr521_skill":           {"query", "id", "skillSource", "limit", "offset", "confirmDangerous"},
+	"zcr521_app_list":        {"user", "query", "appName", "name", "system", "limit", "offset"},
+	"zcr521_app_info":        {"package", "packageName", "component", "query", "appName", "name", "user"},
 	"zcr521_app_install":     {"path", "apk", "paths", "apks", "archive", "package", "packageName", "replace", "downgrade", "grantRuntimePermissions", "user", "operation", "sessionId", "name", "splitName", "background"},
-	"zcr521_app_manage":      {"package", "packageName", "component", "user", "keepData", "enabled", "operation", "mode"},
+	"zcr521_app_manage":      {"package", "packageName", "component", "query", "appName", "name", "user", "keepData", "enabled", "operation", "mode"},
 	"zcr521_app_permission":  {"package", "packageName", "permission", "mode", "user"},
 	"zcr521_app_export":      {"package", "packageName", "destination", "output", "user", "background"},
 	"zcr521_root_info":       {},
@@ -189,7 +192,7 @@ var toolParameters = map[string][]string{
 	"zcr521_power":           {"delayMs", "confirmDangerous"},
 	"zcr521_screen":          {"path", "output", "duration", "seconds", "bitRate", "background"},
 	"zcr521_input":           {"x", "y", "x1", "y1", "x2", "y2", "durationMs", "text", "value", "key", "code"},
-	"zcr521_network":         {"host", "name", "port", "count", "timeout", "timeoutMs", "url", "method", "body", "headers", "maxResponseBytes", "enabled", "mode"},
+	"zcr521_network":         {"host", "name", "port", "count", "timeout", "timeoutMs", "url", "method", "body", "headers", "maxResponseBytes", "enabled", "mode", "jar", "includeValues", "confirmSensitive", "confirmDangerous", "value", "cookiePath", "domain", "secure", "httpOnly", "maxAge", "maxItems", "offset", "maxChars", "renderWaitMs", "user", "connectionId", "message", "binaryBase64", "maxMessageBytes", "subprotocols", "reason"},
 	"zcr521_log":             {"follow", "lines", "timeout", "timeoutMs", "path", "target", "background"},
 	"zcr521_diagnostics":     {"path", "output", "background"},
 	"zcr521_schedule":        {"id", "scheduleId", "name", "type", "tool", "targetTool", "targetArgs", "command", "enabled", "retryCount", "retries", "retryDelaySeconds", "at", "everySeconds", "intervalSeconds", "time", "weekday", "cron", "expression"},
@@ -218,6 +221,24 @@ func All(protocol string) Registry {
 		return 0
 	})
 	return Registry{SchemaVersion: Draft202012, Protocol: protocol, Tools: tools}
+}
+
+// RuntimeCompact returns the same tool contract with discovery-only
+// duplication removed. The complete 2020-12 schemas remain available through
+// All/Marshal and schemas/tools.json for offline validation.
+func RuntimeCompact(protocol string) Registry {
+	registry := All(protocol)
+	for index := range registry.Tools {
+		input := registry.Tools[index].InputSchema
+		delete(input, "$schema")
+		delete(input, "$id")
+		if registry.Tools[index].Name != "zcr521_network" && registry.Tools[index].Name != "zcr521_skill" &&
+			registry.Tools[index].Name != "zcr521_app_info" && registry.Tools[index].Name != "zcr521_app_manage" {
+			delete(input, "oneOf")
+		}
+		registry.Tools[index].OutputSchema = nil
+	}
+	return registry
 }
 
 func Find(protocol, name string) (Tool, bool) {
@@ -251,6 +272,12 @@ func ValidateInvocation(name string, args map[string]any) error {
 	if !slices.Contains(found.actions, action) {
 		return fmt.Errorf("tool %s does not support action %q", name, action)
 	}
+	if name == "zcr521_skill" || name == "zcr521_network" || name == "zcr521_app_list" ||
+		name == "zcr521_app_info" || name == "zcr521_app_manage" {
+		if err := validateSchemaValue("arguments", args, actionSchema(found.name, found.actions)); err != nil {
+			return fmt.Errorf("tool %s: %w", name, err)
+		}
+	}
 	return nil
 }
 
@@ -259,13 +286,7 @@ func actionSchema(name string, actions []string) map[string]any {
 	enums := make([]any, 0, len(actions))
 	for _, action := range actions {
 		enums = append(enums, action)
-		oneOf = append(oneOf, map[string]any{
-			"title": action,
-			"properties": map[string]any{
-				"action": map[string]any{"const": action},
-			},
-			"required": []string{"action"},
-		})
+		oneOf = append(oneOf, actionVariant(name, action))
 	}
 	catalog := parameterCatalog()
 	properties := map[string]any{
@@ -286,6 +307,18 @@ func actionSchema(name string, actions []string) map[string]any {
 		}
 		properties[parameter] = definition
 	}
+	if name == "zcr521_app_list" || name == "zcr521_app_info" || name == "zcr521_app_manage" {
+		applicationName := map[string]any{"type": "string", "minLength": 1, "maxLength": 256, "description": "应用显示名或搜索名称。"}
+		for _, parameter := range []string{"query", "appName", "name"} {
+			if _, exists := properties[parameter]; exists {
+				properties[parameter] = applicationName
+			}
+		}
+	}
+	if name == "zcr521_app_list" {
+		properties["limit"] = map[string]any{"type": "integer", "minimum": 1, "maximum": 50, "description": "本页最多返回的应用数。"}
+		properties["offset"] = map[string]any{"type": "integer", "minimum": 0, "maximum": 100000, "description": "匹配结果的零基分页偏移。"}
+	}
 	return map[string]any{
 		"$schema":              Draft202012,
 		"$id":                  "https://zcr521.local/schema/tools/" + name + ".json",
@@ -295,6 +328,84 @@ func actionSchema(name string, actions []string) map[string]any {
 		"oneOf":                oneOf,
 		"additionalProperties": false,
 	}
+}
+
+func actionVariant(tool, action string) map[string]any {
+	properties := map[string]any{"action": map[string]any{"const": action}}
+	required := []string{"action"}
+	variant := map[string]any{"title": action, "properties": properties, "required": required}
+	if tool == "zcr521_skill" {
+		switch action {
+		case "match":
+			properties["limit"] = map[string]any{"type": "integer", "minimum": 1, "maximum": 3}
+			required = append(required, "query")
+		case "get", "forget":
+			required = append(required, "id")
+		}
+		variant["required"] = required
+		return variant
+	}
+	if tool == "zcr521_app_info" || tool == "zcr521_app_manage" {
+		nameValue := map[string]any{"type": "string", "minLength": 1, "maxLength": 256}
+		for _, key := range []string{"query", "appName", "name"} {
+			properties[key] = nameValue
+		}
+		if tool == "zcr521_app_info" || action == "launch" {
+			variant["anyOf"] = []any{
+				map[string]any{"required": []string{"package"}},
+				map[string]any{"required": []string{"packageName"}},
+				map[string]any{"required": []string{"component"}},
+				map[string]any{"required": []string{"query"}},
+				map[string]any{"required": []string{"appName"}},
+				map[string]any{"required": []string{"name"}},
+			}
+		} else {
+			variant["anyOf"] = []any{
+				map[string]any{"required": []string{"package"}},
+				map[string]any{"required": []string{"packageName"}},
+			}
+		}
+		return variant
+	}
+	if tool != "zcr521_network" {
+		return variant
+	}
+	httpURL := map[string]any{"type": "string", "format": "uri", "pattern": "^https?://", "maxLength": 8192}
+	webSocketURL := map[string]any{"type": "string", "format": "uri", "pattern": "^wss?://", "maxLength": 8192}
+	switch action {
+	case "http", "web_extract", "browser_capture", "feed_parse":
+		properties["url"] = httpURL
+		required = append(required, "url")
+	case "cookie_set":
+		properties["url"] = httpURL
+		required = append(required, "url", "name", "value")
+	case "cookie_delete":
+		properties["url"] = httpURL
+		required = append(required, "url", "name")
+	case "ws_connect":
+		properties["url"] = webSocketURL
+		properties["maxMessageBytes"] = map[string]any{"type": "integer", "minimum": 1024, "maximum": 1048576}
+		required = append(required, "url")
+	case "ws_send":
+		required = append(required, "connectionId")
+		properties["message"] = map[string]any{"type": "string", "maxLength": 1048576}
+		properties["binaryBase64"] = map[string]any{"type": "string", "maxLength": 1398104}
+		variant["oneOf"] = []any{map[string]any{"required": []string{"message"}}, map[string]any{"required": []string{"binaryBase64"}}}
+	case "ws_receive", "ws_ping", "ws_close":
+		required = append(required, "connectionId")
+	}
+	switch action {
+	case "feed_parse":
+		properties["maxItems"] = map[string]any{"type": "integer", "minimum": 1, "maximum": 200}
+	case "web_extract":
+		properties["maxItems"] = map[string]any{"type": "integer", "minimum": 0, "maximum": 1000}
+		properties["maxResponseBytes"] = map[string]any{"type": "integer", "minimum": 1, "maximum": 2097152}
+		properties["maxChars"] = map[string]any{"type": "integer", "minimum": 1024, "maximum": 262144}
+	case "cookie_list":
+		properties["maxItems"] = map[string]any{"type": "integer", "minimum": 1, "maximum": 500}
+	}
+	variant["required"] = required
+	return variant
 }
 
 func parameterCatalog() map[string]any {
@@ -337,6 +448,7 @@ func parameterCatalog() map[string]any {
 		"algorithm":               map[string]any{"type": "string", "enum": []string{"md5", "sha1", "sha256"}, "description": "哈希算法。"},
 		"allowed":                 booleanValue("是否允许该策略或权限。"),
 		"apk":                     pathValue("APK 文件路径兼容别名。"),
+		"appName":                 map[string]any{"type": "string", "minLength": 1, "maxLength": 256, "description": "应用显示名。"},
 		"apks":                    stringArray("Split APK 路径数组兼容别名。"),
 		"archive":                 pathValue("归档文件路径兼容别名。"),
 		"artifactIndex":           integerValue("任务产物的零基索引。", 0),
@@ -348,23 +460,28 @@ func parameterCatalog() map[string]any {
 		"backup":                  pathValue("备份归档路径兼容别名。"),
 		"bitRate":                 integerValue("录屏码率，单位 bit/s。", 1),
 		"body":                    stringValue("HTTP 请求体。"),
+		"binaryBase64":            stringValue("WebSocket 二进制消息的 Base64。"),
 		"bytes":                   integerValue("尾部读取的最大字节数。", 0),
 		"cmd":                     stringValue("Shell 命令兼容别名。"),
 		"code":                    map[string]any{"oneOf": []any{map[string]any{"type": "integer", "minimum": 0}, map[string]any{"type": "string", "minLength": 1}}, "description": "Binder transaction 或按键代码。"},
 		"command":                 stringValue("要执行的 Shell 命令。"),
 		"component":               stringValue("Android 组件名。"),
+		"connectionId":            stringValue("WebSocket 连接 ID。"),
 		"config":                  configInputSchema(),
 		"confirmDangerous":        booleanValue("确认高风险破坏性操作的显式开关。"),
 		"content":                 stringValue("文本或 Base64 内容。"),
 		"context":                 stringValue("SELinux context。"),
 		"count":                   integerValue("数量、行数或 Ping 次数。", 0),
+		"cookiePath":              stringValue("Cookie Path，默认 /。"),
 		"createParents":           booleanValue("写入前是否创建父目录。"),
 		"cron":                    stringValue("五字段 Cron 表达式。"),
+		"cursor":                  stringValue("分页游标。"),
 		"cwd":                     pathValue("子进程工作目录；相对路径基于默认工作目录。"),
 		"data":                    stringValue("content 的兼容别名。"),
 		"delayMs":                 integerValue("执行电源操作前的延迟毫秒数。", 0),
 		"dest":                    pathValue("destination 的兼容别名。"),
 		"destination":             pathValue("目标路径；相对路径基于默认工作目录。"),
+		"domain":                  stringValue("Cookie Domain。"),
 		"digest":                  stringValue("expected 的兼容摘要字段。"),
 		"downgrade":               booleanValue("是否允许版本降级安装。"),
 		"duration":                integerValue("持续时间秒数。", 0),
@@ -386,12 +503,15 @@ func parameterCatalog() map[string]any {
 		"headers":                 stringMap("HTTP 请求头。"),
 		"host":                    stringValue("主机名或 IP 地址。"),
 		"hostname":                stringValue("主机名。"),
+		"httpOnly":                booleanValue("Cookie 是否仅限 HTTP。"),
 		"id":                      stringValue("任务、模块、计划或组件 ID。"),
+		"includeValues":           booleanValue("是否返回敏感 Cookie 值。"),
 		"identity":                map[string]any{"type": "string", "enum": []string{"root", "shell", "current", "uid"}, "description": "Shell 执行身份。"},
 		"index":                   integerValue("零基索引。", 0),
 		"inputs":                  stringArray("sources 的兼容别名。"),
 		"intervalSeconds":         integerValue("everySeconds 的兼容别名。", 1),
 		"items":                   map[string]any{"type": "array", "minItems": 1, "maxItems": 64, "items": map[string]any{"type": "object", "additionalProperties": true}, "description": "批量下载参数对象。"},
+		"jar":                     map[string]any{"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$", "description": "持久 Cookie jar 名称。"},
 		"key":                     stringValue("属性、设置或按键名称。"),
 		"keepData":                booleanValue("卸载时是否保留应用数据。"),
 		"kind":                    stringValue("服务或操作类别。"),
@@ -406,10 +526,14 @@ func parameterCatalog() map[string]any {
 		"lower":                   pathValue("OverlayFS lowerdir。"),
 		"maxBytes":                integerValue("最大传输字节数；0 表示仅受磁盘和配置限制。", 0),
 		"maxFiles":                integerValue("扫描文件数上限。", 1),
-		"maxResponseBytes":        map[string]any{"type": "integer", "minimum": 1, "maximum": 67108864, "description": "HTTP 响应预览上限。"},
+		"maxChars":                integerValue("网页正文最大字符数。", 1024),
+		"maxItems":                map[string]any{"type": "integer", "minimum": 0, "maximum": 1000, "description": "Feed 条目、链接或 Cookie 分页数量上限。"},
+		"maxAge":                  integerValue("Cookie 有效秒数；0 表示会话 Cookie。", 0),
+		"maxMessageBytes":         map[string]any{"type": "integer", "minimum": 1024, "maximum": 1048576, "description": "WebSocket 单消息字节上限；运行时还受结果预览预算约束。"},
+		"maxResponseBytes":        map[string]any{"type": "integer", "minimum": 1, "maximum": 4194304, "description": "HTTP/HTML/Feed 响应读取硬上限；大文件使用下载工具。"},
 		"maxResults":              integerValue("最大返回结果数。", 1),
 		"maxSize":                 map[string]any{"type": "integer", "minimum": -1, "description": "最大文件字节数；-1 表示不限制。"},
-		"message":                 stringValue("任务进度消息。"),
+		"message":                 map[string]any{"type": "string", "maxLength": 1024, "description": "任务进度消息。"},
 		"method":                  stringValue("HTTP 方法。"),
 		"milliseconds":            integerValue("毫秒值。", 0),
 		"minSize":                 integerValue("最小文件字节数。", 0),
@@ -420,7 +544,7 @@ func parameterCatalog() map[string]any {
 		"muted":                   booleanValue("是否静音。"),
 		"name":                    stringValue("名称、服务名或查询字段。"),
 		"namespace":               map[string]any{"type": "string", "enum": []string{"system", "secure", "global"}, "description": "Android Settings 命名空间。"},
-		"offset":                  integerValue("字节偏移。", 0),
+		"offset":                  integerValue("列表项或字节偏移。", 0),
 		"operation":               stringValue("Package Manager session 子操作。"),
 		"output":                  pathValue("destination/path 的兼容别名。"),
 		"overwrite":               booleanValue("是否覆盖已存在目标。"),
@@ -436,6 +560,8 @@ func parameterCatalog() map[string]any {
 		"priority":                map[string]any{"type": "integer", "minimum": -20, "maximum": 19, "description": "进程 nice 优先级。"},
 		"progress":                map[string]any{"type": "number", "minimum": 0, "maximum": 1, "description": "任务进度 0..1。"},
 		"query":                   stringValue("搜索查询。"),
+		"reason":                  stringValue("WebSocket 关闭原因。"),
+		"renderWaitMs":            map[string]any{"type": "integer", "minimum": 0, "maximum": 30000, "description": "系统浏览器渲染等待毫秒数。"},
 		"recursive":               booleanValue("是否递归处理目录。"),
 		"replace":                 booleanValue("是否替换已安装应用。"),
 		"reset":                   booleanValue("是否恢复系统默认值。"),
@@ -452,8 +578,10 @@ func parameterCatalog() map[string]any {
 		"service":                 stringValue("Android Binder 或 init 服务名。"),
 		"sessionId":               integerValue("Package Manager session ID。", 0),
 		"sha256":                  map[string]any{"type": "string", "pattern": "^[A-Fa-f0-9]{64}$", "description": "期望或实际 SHA-256。"},
+		"secure":                  booleanValue("Cookie 是否仅通过安全连接发送。"),
 		"signal":                  map[string]any{"oneOf": []any{map[string]any{"type": "integer", "minimum": 1, "maximum": 64}, map[string]any{"type": "string", "minLength": 1}}, "description": "POSIX 信号编号或名称。"},
 		"size":                    map[string]any{"type": "integer", "minimum": -1, "description": "文件字节数。"},
+		"skillSource":             map[string]any{"type": "string", "enum": []string{"all", "builtin", "learned"}, "description": "技能索引来源。"},
 		"source":                  stringOrArray("源路径或源路径数组。"),
 		"sources":                 stringArray("源路径数组。"),
 		"splitName":               stringValue("Package Manager split 名。"),
@@ -461,6 +589,7 @@ func parameterCatalog() map[string]any {
 		"startLine":               integerValue("首行，1 基。", 1),
 		"stdin":                   stringValue("发送给子进程标准输入的内容。"),
 		"stream":                  integerValue("Android 音频流编号。", 0),
+		"subprotocols":            stringArray("WebSocket 子协议列表。"),
 		"system":                  booleanValue("是否仅包含系统应用。"),
 		"table":                   map[string]any{"type": "string", "enum": []string{"system", "secure", "global"}, "description": "namespace 的兼容别名。"},
 		"target":                  pathValue("链接、挂载或 Systemless 目标路径。"),
@@ -471,13 +600,14 @@ func parameterCatalog() map[string]any {
 		"time":                    stringValue("HH:MM 时间或系统时间值。"),
 		"timeout":                 map[string]any{"oneOf": []any{map[string]any{"type": "integer", "minimum": 1}, map[string]any{"type": "string", "pattern": "^[0-9]+(?:ms|s|m|h)$"}}, "description": "超时秒数或 Go 风格时长。"},
 		"timeoutMs":               integerValue("超时毫秒数。", 1),
+		"confirmSensitive":        booleanValue("确认返回敏感认证值。"),
 		"timezone":                stringValue("IANA 时区。"),
 		"tool":                    stringValue("定时任务目标工具名。"),
 		"transaction":             integerValue("Binder transaction code。", 0),
 		"type":                    stringValue("归档、服务、备份或定时任务类型。"),
 		"uid":                     map[string]any{"type": "integer", "minimum": -1, "description": "目标 UID；-1 表示保持不变。"},
 		"upper":                   pathValue("OverlayFS upperdir。"),
-		"url":                     map[string]any{"type": "string", "format": "uri", "pattern": "^https?://", "description": "HTTP 或 HTTPS URL。"},
+		"url":                     map[string]any{"type": "string", "format": "uri", "pattern": "^(?:https?|wss?)://", "maxLength": 8192, "description": "HTTP(S) 或 WebSocket URL；具体 action 会进一步限制协议。"},
 		"user":                    map[string]any{"oneOf": []any{map[string]any{"type": "integer", "minimum": 0}, map[string]any{"type": "string", "minLength": 1}}, "description": "Android 用户 ID 或 Shell 身份兼容字段。"},
 		"value":                   map[string]any{"type": []string{"string", "integer", "boolean"}, "description": "设置值；具体类型由 action 决定。"},
 		"weekday":                 map[string]any{"type": "integer", "minimum": 0, "maximum": 6, "description": "星期，0 表示周日。"},
@@ -543,7 +673,7 @@ func configInputSchema() map[string]any {
 					"shellTimeoutSeconds":   integer(1, 86400, "Shell 默认超时秒数。"),
 					"transferChunkBytes":    integer(65536, 67108864, "MCP 传输块字节数。"),
 					"transferMaxBytes":      integer(0, 1<<60, "传输总大小上限；0 表示仅受磁盘限制。"),
-					"resultPreviewBytes":    integer(1024, 67108864, "结果预览字节数。"),
+					"resultPreviewBytes":    integer(4096, 1048576, "结果预览字节数。"),
 					"artifactTtlSeconds":    integer(1, 604800, "临时产物有效秒数。"),
 					"shutdownGraceSeconds":  integer(1, 300, "优雅退出秒数。"),
 					"uploadIdleTtlSeconds":  integer(60, 2592000, "上传会话空闲有效秒数。"),

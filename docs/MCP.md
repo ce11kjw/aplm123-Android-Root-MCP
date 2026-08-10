@@ -34,9 +34,29 @@
 
 Schema 使用 JSON Schema 2020-12；每个工具都要求 `action`，用 `enum` 与 `oneOf` 描述允许动作，并标记只读、幂等、破坏性和重任务属性。
 
+当前 `2026-07-28` 协议只在 `structuredContent` 放置一次完整结果，文本内容压缩为 `CODE: message`；旧协议仍保留完整 JSON 文本以兼容只读取文本的客户端。在线 `tools/list` 省略重复的 `$schema`、`$id` 与输出 Schema，普通旧工具还省略等价 `oneOf`；`zcr521_network` 和 `zcr521_skill` 保留动作级必填与上限约束。完整离线契约仍保留在 `schemas/tools.json`。这两项只减少传输与模型上下文，不改变服务端参数校验。
+
+## 技能自动匹配与完成记忆
+
+内置技能包含 Android 网页与屏幕自动化，以及低 Token MCP 工作流。MCP 初始化指令要求 AI 对非平凡任务先 `match` 最多 3 条摘要、只在摘要不足时 `get` 最相关的 1 条正文；普通工具调用也按明确的工具/action 自动匹配并在 `_meta.skillHints` 返回提示。服务不会在初始化时注入全部正文；`list` 默认只返回 20 条索引，支持 `offset`/`limit`（上限 100）和 `nextOffset`。
+
+完成记忆的提交顺序如下：
+
+1. 同步工具真正返回结果后写收据；后台调用只在任务进入终态时先提交独立完成收据，再删除终态任务快照中的原始参数。
+2. v4 收据保存随机唯一 ID、单调事件序号、技能代次、工具、action、脱敏参数形状、成功状态、错误分类、策略、耗时、退出码、重启要求与白名单产物类型，不保存完整输出、产物文件名或秘密。
+3. 同一 `tool/action` 的结果聚合更新一个详细 `SKILL.md`，记录尝试/成功/失败后恢复次数、适用条件、脱敏参数模板、最近已知成功方案、验收信号和失败类别。
+4. 权威收据位于 `/data/adb/zcr521-mcp/MCP/invocations`，技能位于其 `skills/learned`；技能同步镜像到 `/storage/emulated/0/zcr521AI/MCP/skills/learned`。
+5. 任一步持久化失败不会伪造“已保存”，`zcr521_skill.stats` 会暴露最近错误；业务工具结果本身不因学习失败而被改写。
+6. 收据超过 20,000 个或 64 MiB 时压缩到 16,000 个且不高于 48 MiB；仍可恢复的任务 ID 进入带校验和及存在标记的精确 SHA-256 账本。账本损坏或压缩后缺失时保持只读故障闭锁，不覆盖坏证据。
+7. `TASK_ACCEPTED`、任务/状态轮询、技能自身调用、能力读取和配置读取不进入执行经验，避免高频控制面噪声浪费 Token。
+
+MCP 服务只能可靠学习它实际看到的工具/action 与结果，不能从无会话调用中编造用户未传入的任务意图。自动技能因此采用可验证的工具级经验；复杂目标仍应由客户端保留任务上下文。完整目录、数据模型、事务顺序、遗忘语义和隐私边界见 [技能与长期记忆设计](SKILLS-MEMORY.md)。
+
 ## 持久任务
 
 工具参数设置 `"background": true` 会先把任务及其日志位置持久化，再开始执行。任务与日志以原子 JSON/JSONL 保存到内部状态目录，不依赖数据库，客户端断开不会取消后台任务。
+
+后台持久化只接受可安全落盘的参数：Authorization/Cookie/token、headers、body/content/data、命令/脚本、stdin/env、WebSocket 消息以及带 userinfo/query 的 URL 会返回 `BACKGROUND_SENSITIVE_ARGUMENTS_UNSUPPORTED`。任务查询与列表不返回 arguments；终态快照删除原始 arguments，并按任务数、总字节和单任务日志上限保留。
 
 在 `2026-07-28` 请求的逐请求 `_meta.io.modelcontextprotocol/clientCapabilities.extensions` 中声明 `io.modelcontextprotocol/tasks` 时，`tools/call` 返回标准 `CreateTaskResult`（`resultType: "task"`）；未声明扩展的客户端得到普通 `CallToolResult`，其中保留 `TASK_ACCEPTED`、`taskId`，并可通过 `zcr521_task` 查询。
 

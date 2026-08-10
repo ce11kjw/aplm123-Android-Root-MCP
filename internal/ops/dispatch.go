@@ -27,6 +27,7 @@ var publicTools = []string{
 	"zcr521_shell",
 	"zcr521_script",
 	"zcr521_task",
+	"zcr521_skill",
 	"zcr521_app_list",
 	"zcr521_app_info",
 	"zcr521_app_install",
@@ -100,6 +101,8 @@ func (m *Manager) executeSync(ctx context.Context, req Request) Result {
 		return m.publicScriptOperation(ctx, req)
 	case "zcr521_task":
 		return m.publicTaskOperation(req)
+	case "zcr521_skill":
+		return unsupported("技能索引和执行记忆由 service 层提供")
 	case "zcr521_process":
 		return m.processOperation(ctx, req)
 	case "zcr521_network":

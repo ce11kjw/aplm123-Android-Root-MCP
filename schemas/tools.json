@@ -331,16 +331,63 @@
     {
       "name": "zcr521_app_info",
       "title": "应用信息",
-      "description": "读取应用、组件与权限详情。",
+      "description": "按显示名、包名或组件读取应用、组件与权限详情。",
       "inputSchema": {
         "$id": "https://zcr521.local/schema/tools/zcr521_app_info.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              },
+              {
+                "required": [
+                  "component"
+                ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
+              },
+              {
+                "required": [
+                  "appName"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "get"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -349,9 +396,56 @@
             "title": "get"
           },
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              },
+              {
+                "required": [
+                  "component"
+                ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
+              },
+              {
+                "required": [
+                  "appName"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "components"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -360,9 +454,56 @@
             "title": "components"
           },
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              },
+              {
+                "required": [
+                  "component"
+                ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
+              },
+              {
+                "required": [
+                  "appName"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "permissions"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -381,8 +522,20 @@
             ],
             "type": "string"
           },
+          "appName": {
+            "description": "应用显示名或搜索名称。",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
           "component": {
             "description": "Android 组件名。",
+            "type": "string"
+          },
+          "name": {
+            "description": "应用显示名或搜索名称。",
+            "maxLength": 256,
+            "minLength": 1,
             "type": "string"
           },
           "package": {
@@ -391,6 +544,12 @@
           },
           "packageName": {
             "description": "package 的兼容别名。",
+            "type": "string"
+          },
+          "query": {
+            "description": "应用显示名或搜索名称。",
+            "maxLength": 256,
+            "minLength": 1,
             "type": "string"
           },
           "user": {
@@ -721,7 +880,7 @@
     {
       "name": "zcr521_app_list",
       "title": "应用列表",
-      "description": "列出普通、系统或指定用户应用。",
+      "description": "按显示名或包名查询普通、系统或指定用户应用。",
       "inputSchema": {
         "$id": "https://zcr521.local/schema/tools/zcr521_app_list.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -747,8 +906,34 @@
             ],
             "type": "string"
           },
+          "appName": {
+            "description": "应用显示名或搜索名称。",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "limit": {
+            "description": "本页最多返回的应用数。",
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "name": {
+            "description": "应用显示名或搜索名称。",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "offset": {
+            "description": "匹配结果的零基分页偏移。",
+            "maximum": 100000,
+            "minimum": 0,
+            "type": "integer"
+          },
           "query": {
-            "description": "搜索查询。",
+            "description": "应用显示名或搜索名称。",
+            "maxLength": 256,
+            "minLength": 1,
             "type": "string"
           },
           "system": {
@@ -847,16 +1032,63 @@
     {
       "name": "zcr521_app_manage",
       "title": "管理应用",
-      "description": "启动、停止、清理、启停、卸载及多用户管理应用。",
+      "description": "按显示名、包名或组件启动应用，并管理精确包名对应的应用。",
       "inputSchema": {
         "$id": "https://zcr521.local/schema/tools/zcr521_app_manage.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              },
+              {
+                "required": [
+                  "component"
+                ]
+              },
+              {
+                "required": [
+                  "query"
+                ]
+              },
+              {
+                "required": [
+                  "appName"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "launch"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -865,9 +1097,36 @@
             "title": "launch"
           },
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "stop"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -876,9 +1135,36 @@
             "title": "stop"
           },
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "clear_cache"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -887,9 +1173,36 @@
             "title": "clear_cache"
           },
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "clear_data"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -898,9 +1211,36 @@
             "title": "clear_data"
           },
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "enable"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -909,9 +1249,36 @@
             "title": "enable"
           },
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "disable"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -920,9 +1287,36 @@
             "title": "disable"
           },
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "uninstall"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -931,9 +1325,36 @@
             "title": "uninstall"
           },
           {
+            "anyOf": [
+              {
+                "required": [
+                  "package"
+                ]
+              },
+              {
+                "required": [
+                  "packageName"
+                ]
+              }
+            ],
             "properties": {
               "action": {
                 "const": "user"
+              },
+              "appName": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "query": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
               }
             },
             "required": [
@@ -957,6 +1378,12 @@
             ],
             "type": "string"
           },
+          "appName": {
+            "description": "应用显示名或搜索名称。",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
           "component": {
             "description": "Android 组件名。",
             "type": "string"
@@ -973,6 +1400,12 @@
             "description": "文件模式或 Android 子操作模式。",
             "type": "string"
           },
+          "name": {
+            "description": "应用显示名或搜索名称。",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
           "operation": {
             "description": "Package Manager session 子操作。",
             "type": "string"
@@ -983,6 +1416,12 @@
           },
           "packageName": {
             "description": "package 的兼容别名。",
+            "type": "string"
+          },
+          "query": {
+            "description": "应用显示名或搜索名称。",
+            "maxLength": 256,
+            "minLength": 1,
             "type": "string"
           },
           "user": {
@@ -2256,8 +2695,8 @@
                   },
                   "resultPreviewBytes": {
                     "description": "结果预览字节数。",
-                    "maximum": 67108864,
-                    "minimum": 1024,
+                    "maximum": 1048576,
+                    "minimum": 4096,
                     "type": "integer"
                   },
                   "shellTimeoutSeconds": {
@@ -3653,9 +4092,10 @@
             "type": "integer"
           },
           "url": {
-            "description": "HTTP 或 HTTPS URL。",
+            "description": "HTTP(S) 或 WebSocket URL；具体 action 会进一步限制协议。",
             "format": "uri",
-            "pattern": "^https?://",
+            "maxLength": 8192,
+            "pattern": "^(?:https?|wss?)://",
             "type": "string"
           }
         },
@@ -4424,7 +4864,7 @@
             "type": "integer"
           },
           "offset": {
-            "description": "字节偏移。",
+            "description": "列表项或字节偏移。",
             "minimum": 0,
             "type": "integer"
           },
@@ -4831,7 +5271,7 @@
             "type": "string"
           },
           "offset": {
-            "description": "字节偏移。",
+            "description": "列表项或字节偏移。",
             "minimum": 0,
             "type": "integer"
           },
@@ -5698,7 +6138,7 @@
     {
       "name": "zcr521_network",
       "title": "网络工具",
-      "description": "接口、路由、DNS、Ping、HTTP、端口、连接、Wi-Fi 与代理。",
+      "description": "网络诊断、持久 HTTP/Cookie、HTML/浏览器捕获、RSS/Atom 与 WebSocket。",
       "inputSchema": {
         "$id": "https://zcr521.local/schema/tools/zcr521_network.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -5763,10 +6203,17 @@
             "properties": {
               "action": {
                 "const": "http"
+              },
+              "url": {
+                "format": "uri",
+                "maxLength": 8192,
+                "pattern": "^https?://",
+                "type": "string"
               }
             },
             "required": [
-              "action"
+              "action",
+              "url"
             ],
             "title": "http"
           },
@@ -5824,6 +6271,248 @@
               "action"
             ],
             "title": "connectivity"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "web_extract"
+              },
+              "maxChars": {
+                "maximum": 262144,
+                "minimum": 1024,
+                "type": "integer"
+              },
+              "maxItems": {
+                "maximum": 1000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "maxResponseBytes": {
+                "maximum": 2097152,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "url": {
+                "format": "uri",
+                "maxLength": 8192,
+                "pattern": "^https?://",
+                "type": "string"
+              }
+            },
+            "required": [
+              "action",
+              "url"
+            ],
+            "title": "web_extract"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "browser_capture"
+              },
+              "url": {
+                "format": "uri",
+                "maxLength": 8192,
+                "pattern": "^https?://",
+                "type": "string"
+              }
+            },
+            "required": [
+              "action",
+              "url"
+            ],
+            "title": "browser_capture"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "feed_parse"
+              },
+              "maxItems": {
+                "maximum": 200,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "url": {
+                "format": "uri",
+                "maxLength": 8192,
+                "pattern": "^https?://",
+                "type": "string"
+              }
+            },
+            "required": [
+              "action",
+              "url"
+            ],
+            "title": "feed_parse"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "cookie_list"
+              },
+              "maxItems": {
+                "maximum": 500,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "cookie_list"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "cookie_set"
+              },
+              "url": {
+                "format": "uri",
+                "maxLength": 8192,
+                "pattern": "^https?://",
+                "type": "string"
+              }
+            },
+            "required": [
+              "action",
+              "url",
+              "name",
+              "value"
+            ],
+            "title": "cookie_set"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "cookie_delete"
+              },
+              "url": {
+                "format": "uri",
+                "maxLength": 8192,
+                "pattern": "^https?://",
+                "type": "string"
+              }
+            },
+            "required": [
+              "action",
+              "url",
+              "name"
+            ],
+            "title": "cookie_delete"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "cookie_clear"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "cookie_clear"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "ws_connect"
+              },
+              "maxMessageBytes": {
+                "maximum": 1048576,
+                "minimum": 1024,
+                "type": "integer"
+              },
+              "url": {
+                "format": "uri",
+                "maxLength": 8192,
+                "pattern": "^wss?://",
+                "type": "string"
+              }
+            },
+            "required": [
+              "action",
+              "url"
+            ],
+            "title": "ws_connect"
+          },
+          {
+            "oneOf": [
+              {
+                "required": [
+                  "message"
+                ]
+              },
+              {
+                "required": [
+                  "binaryBase64"
+                ]
+              }
+            ],
+            "properties": {
+              "action": {
+                "const": "ws_send"
+              },
+              "binaryBase64": {
+                "maxLength": 1398104,
+                "type": "string"
+              },
+              "message": {
+                "maxLength": 1048576,
+                "type": "string"
+              }
+            },
+            "required": [
+              "action",
+              "connectionId"
+            ],
+            "title": "ws_send"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "ws_receive"
+              }
+            },
+            "required": [
+              "action",
+              "connectionId"
+            ],
+            "title": "ws_receive"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "ws_ping"
+              }
+            },
+            "required": [
+              "action",
+              "connectionId"
+            ],
+            "title": "ws_ping"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "ws_close"
+              }
+            },
+            "required": [
+              "action",
+              "connectionId"
+            ],
+            "title": "ws_close"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "ws_list"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "ws_list"
           }
         ],
         "properties": {
@@ -5840,18 +6529,55 @@
               "connections",
               "wifi",
               "proxy",
-              "connectivity"
+              "connectivity",
+              "web_extract",
+              "browser_capture",
+              "feed_parse",
+              "cookie_list",
+              "cookie_set",
+              "cookie_delete",
+              "cookie_clear",
+              "ws_connect",
+              "ws_send",
+              "ws_receive",
+              "ws_ping",
+              "ws_close",
+              "ws_list"
             ],
+            "type": "string"
+          },
+          "binaryBase64": {
+            "description": "WebSocket 二进制消息的 Base64。",
             "type": "string"
           },
           "body": {
             "description": "HTTP 请求体。",
             "type": "string"
           },
+          "confirmDangerous": {
+            "description": "确认高风险破坏性操作的显式开关。",
+            "type": "boolean"
+          },
+          "confirmSensitive": {
+            "description": "确认返回敏感认证值。",
+            "type": "boolean"
+          },
+          "connectionId": {
+            "description": "WebSocket 连接 ID。",
+            "type": "string"
+          },
+          "cookiePath": {
+            "description": "Cookie Path，默认 /。",
+            "type": "string"
+          },
           "count": {
             "description": "数量、行数或 Ping 次数。",
             "minimum": 0,
             "type": "integer"
+          },
+          "domain": {
+            "description": "Cookie Domain。",
+            "type": "string"
           },
           "enabled": {
             "description": "是否启用目标功能。",
@@ -5868,11 +6594,51 @@
             "description": "主机名或 IP 地址。",
             "type": "string"
           },
+          "httpOnly": {
+            "description": "Cookie 是否仅限 HTTP。",
+            "type": "boolean"
+          },
+          "includeValues": {
+            "description": "是否返回敏感 Cookie 值。",
+            "type": "boolean"
+          },
+          "jar": {
+            "description": "持久 Cookie jar 名称。",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+            "type": "string"
+          },
+          "maxAge": {
+            "description": "Cookie 有效秒数；0 表示会话 Cookie。",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxChars": {
+            "description": "网页正文最大字符数。",
+            "minimum": 1024,
+            "type": "integer"
+          },
+          "maxItems": {
+            "description": "Feed 条目、链接或 Cookie 分页数量上限。",
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxMessageBytes": {
+            "description": "WebSocket 单消息字节上限；运行时还受结果预览预算约束。",
+            "maximum": 1048576,
+            "minimum": 1024,
+            "type": "integer"
+          },
           "maxResponseBytes": {
-            "description": "HTTP 响应预览上限。",
-            "maximum": 67108864,
+            "description": "HTTP/HTML/Feed 响应读取硬上限；大文件使用下载工具。",
+            "maximum": 4194304,
             "minimum": 1,
             "type": "integer"
+          },
+          "message": {
+            "description": "任务进度消息。",
+            "maxLength": 1024,
+            "type": "string"
           },
           "method": {
             "description": "HTTP 方法。",
@@ -5886,11 +6652,37 @@
             "description": "名称、服务名或查询字段。",
             "type": "string"
           },
+          "offset": {
+            "description": "列表项或字节偏移。",
+            "minimum": 0,
+            "type": "integer"
+          },
           "port": {
             "description": "TCP 端口。",
             "maximum": 65535,
             "minimum": 1,
             "type": "integer"
+          },
+          "reason": {
+            "description": "WebSocket 关闭原因。",
+            "type": "string"
+          },
+          "renderWaitMs": {
+            "description": "系统浏览器渲染等待毫秒数。",
+            "maximum": 30000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "secure": {
+            "description": "Cookie 是否仅通过安全连接发送。",
+            "type": "boolean"
+          },
+          "subprotocols": {
+            "description": "WebSocket 子协议列表。",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
           "timeout": {
             "description": "超时秒数或 Go 风格时长。",
@@ -5911,10 +6703,32 @@
             "type": "integer"
           },
           "url": {
-            "description": "HTTP 或 HTTPS URL。",
+            "description": "HTTP(S) 或 WebSocket URL；具体 action 会进一步限制协议。",
             "format": "uri",
-            "pattern": "^https?://",
+            "maxLength": 8192,
+            "pattern": "^(?:https?|wss?)://",
             "type": "string"
+          },
+          "user": {
+            "description": "Android 用户 ID 或 Shell 身份兼容字段。",
+            "oneOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "minLength": 1,
+                "type": "string"
+              }
+            ]
+          },
+          "value": {
+            "description": "设置值；具体类型由 action 决定。",
+            "type": [
+              "string",
+              "integer",
+              "boolean"
+            ]
           }
         },
         "required": [
@@ -8412,6 +9226,198 @@
       }
     },
     {
+      "name": "zcr521_skill",
+      "title": "技能与记忆",
+      "description": "渐进匹配、按需读取并管理内置及自动学习技能。",
+      "inputSchema": {
+        "$id": "https://zcr521.local/schema/tools/zcr521_skill.json",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "properties": {
+              "action": {
+                "const": "match"
+              },
+              "limit": {
+                "maximum": 3,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "action",
+              "query"
+            ],
+            "title": "match"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "get"
+              }
+            },
+            "required": [
+              "action",
+              "id"
+            ],
+            "title": "get"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "list"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "list"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "stats"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "stats"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "forget"
+              }
+            },
+            "required": [
+              "action",
+              "id"
+            ],
+            "title": "forget"
+          }
+        ],
+        "properties": {
+          "action": {
+            "description": "要执行的明确操作。",
+            "enum": [
+              "match",
+              "get",
+              "list",
+              "stats",
+              "forget"
+            ],
+            "type": "string"
+          },
+          "confirmDangerous": {
+            "description": "确认高风险破坏性操作的显式开关。",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "任务、模块、计划或组件 ID。",
+            "type": "string"
+          },
+          "limit": {
+            "description": "返回或读取上限。",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "offset": {
+            "description": "列表项或字节偏移。",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "query": {
+            "description": "搜索查询。",
+            "type": "string"
+          },
+          "skillSource": {
+            "description": "技能索引来源。",
+            "enum": [
+              "all",
+              "builtin",
+              "learned"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "type": "array"
+          },
+          "code": {
+            "type": "string"
+          },
+          "data": {},
+          "durationMs": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "error": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "exitCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "rebootRequired": {
+            "type": "boolean"
+          },
+          "stderr": {
+            "type": "string"
+          },
+          "stdout": {
+            "type": "string"
+          },
+          "strategy": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "taskId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "code",
+          "message",
+          "data",
+          "error",
+          "stdout",
+          "stderr",
+          "exitCode",
+          "durationMs",
+          "taskId",
+          "rebootRequired",
+          "artifacts",
+          "strategy"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "readOnly": false,
+        "idempotent": false,
+        "destructive": false,
+        "heavy": false
+      }
+    },
+    {
       "name": "zcr521_status",
       "title": "服务状态",
       "description": "读取服务、Root、地址、任务与运行时间状态。",
@@ -8795,7 +9801,13 @@
           },
           "message": {
             "description": "任务进度消息。",
+            "maxLength": 1024,
             "type": "string"
+          },
+          "offset": {
+            "description": "列表项或字节偏移。",
+            "minimum": 0,
+            "type": "integer"
           },
           "progress": {
             "description": "任务进度 0..1。",
@@ -9143,7 +10155,7 @@
             "type": "integer"
           },
           "offset": {
-            "description": "字节偏移。",
+            "description": "列表项或字节偏移。",
             "minimum": 0,
             "type": "integer"
           },

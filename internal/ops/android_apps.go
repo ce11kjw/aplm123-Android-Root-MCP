@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+const appResultEnvelopeReserve = 2 << 10
+
 func (m *Manager) appOperation(ctx context.Context, req Request) Result {
 	if result := requireAndroid(); result != nil {
 		return *result
@@ -49,6 +51,53 @@ func (m *Manager) appList(ctx context.Context, req Request) Result {
 	default:
 		return invalidAction(req.Tool, action, "all", "system", "user")
 	}
+	query, err := argOptionalString(req.Args, "", "query", "appName", "name")
+	if err != nil {
+		return invalid(err.Error())
+	}
+	query = strings.TrimSpace(query)
+	if query != "" {
+		user, userErr := m.resolveAppUser(ctx, req.Args, false)
+		if userErr != nil {
+			return fail("USER_RESOLUTION_FAILED", "无法确定应用所属 Android 用户", userErr, "android_current_user_probe")
+		}
+		systemFilter := 0
+		switch action {
+		case "system":
+			systemFilter = 1
+		case "user":
+			systemFilter = -1
+		}
+		if raw, exists := req.Args["system"]; exists {
+			value, valid := raw.(bool)
+			if !valid {
+				return invalid("system 必须是布尔值")
+			}
+			requested := -1
+			if value {
+				requested = 1
+			}
+			if systemFilter != 0 && systemFilter != requested {
+				return invalid("action 与 system 过滤条件冲突")
+			}
+			systemFilter = requested
+		}
+		limit, limitErr := argInt64(req.Args, 20, "limit")
+		offset, offsetErr := argInt64(req.Args, 0, "offset")
+		if limitErr != nil || limit < 1 || limit > 50 || offsetErr != nil || offset < 0 || offset > 100000 {
+			return invalid("limit 必须为 1..50，offset 必须为 0..100000")
+		}
+		candidates, total, hasMore, queryErr := m.queryAndroidApplications(ctx, user, query, int(offset), int(limit), systemFilter)
+		if queryErr != nil {
+			return fail("APP_DISCOVERY_UNAVAILABLE", "系统 PackageManager 无法按应用名称查询", queryErr, "android_package_manager_label_query")
+		}
+		ranked := rankAppCandidates(query, candidates)
+		if len(ranked) != len(candidates) {
+			return fail("APP_DISCOVERY_UNAVAILABLE", "系统 PackageManager 返回了不一致的应用匹配结果", errors.New("PackageManager and local application rankings diverged"), "android_package_manager_label_query")
+		}
+		data := buildAppSearchPage(query, action, user, total, int(offset), int(limit), ranked, hasMore, int(m.cfg.ResultPreviewBytes))
+		return ok("应用名称查询成功", data, "android_package_manager_label_query")
+	}
 	user, err := androidUser(req.Args)
 	if err != nil {
 		return invalid(err.Error())
@@ -71,6 +120,79 @@ func (m *Manager) appList(ctx context.Context, req Request) Result {
 	result.Message = "应用列表读取成功"
 	result.Data = map[string]any{"scope": action, "user": user, "count": len(packages), "packages": packages}
 	return result
+}
+
+func buildAppSearchPage(query, scope, user string, total, offset, requestedLimit int, ranked []scoredAppCandidate, helperHasMore bool, budget int) map[string]any {
+	dataBudget := appResultDataBudget(budget)
+	items := make([]map[string]any, 0, len(ranked))
+	for index, rankedItem := range ranked {
+		full := appCandidateSummary(rankedItem.candidate)
+		full["matchScore"] = rankedItem.score
+		compact := map[string]any{
+			"package": rankedItem.candidate.Package, "label": rankedItem.candidate.Label,
+			"system": rankedItem.candidate.System, "installed": rankedItem.candidate.Installed,
+			"enabled":   androidEffectiveEnabled(rankedItem.candidate.Enabled, rankedItem.candidate.State),
+			"suspended": rankedItem.candidate.Suspended, "matchScore": rankedItem.score,
+		}
+		if len(rankedItem.candidate.Activities) > 0 {
+			compact["launchersTruncated"] = true
+		}
+		minimal := map[string]any{"package": rankedItem.candidate.Package, "matchScore": rankedItem.score, "labelOmitted": true}
+		accepted := false
+		for _, candidateItem := range []map[string]any{full, compact, minimal} {
+			trialItems := append(append([]map[string]any(nil), items...), candidateItem)
+			more := index+1 < len(ranked) || helperHasMore
+			trial := appSearchPageData(query, scope, user, total, offset, requestedLimit, trialItems, more, budget)
+			if jsonEncodedSize(trial) <= dataBudget {
+				items = trialItems
+				accepted = true
+				break
+			}
+		}
+		if !accepted {
+			break
+		}
+	}
+	more := len(items) < len(ranked) || helperHasMore
+	return appSearchPageData(query, scope, user, total, offset, requestedLimit, items, more, budget)
+}
+
+func appResultDataBudget(budget int) int {
+	budget -= appResultEnvelopeReserve
+	if budget < 1024 {
+		return 1024
+	}
+	return budget
+}
+
+func fitAppCommandPreview(result *Result, budget int) {
+	if result == nil {
+		return
+	}
+	outputBudget := appResultDataBudget(budget)
+	if len(result.Stdout) > outputBudget {
+		result.Stdout = truncateUTF8Bytes(result.Stdout, outputBudget)
+		if data, ok := result.Data.(map[string]any); ok {
+			data["outputTruncated"] = true
+			data["inlineLimitBytes"] = budget
+		}
+	}
+}
+
+func appSearchPageData(query, scope, user string, total, offset, requestedLimit int, items []map[string]any, hasMore bool, budget int) map[string]any {
+	data := map[string]any{
+		"query": query, "scope": scope, "user": user, "count": total, "offset": offset,
+		"limit": requestedLimit, "returned": len(items), "items": items, "hasMore": hasMore,
+		"truncated": hasMore, "inlineLimitBytes": budget,
+	}
+	if hasMore {
+		data["nextOffset"] = offset + len(items)
+	}
+	if jsonEncodedSize(data) > appResultDataBudget(budget) {
+		delete(data, "query")
+		data["queryOmitted"] = true
+	}
+	return data
 }
 
 func parsePackageList(output string) []map[string]any {
@@ -115,14 +237,12 @@ func (m *Manager) appInfo(ctx context.Context, req Request) Result {
 	if err != nil {
 		return invalid(err.Error())
 	}
-	pkg, err := packageName(req.Args)
-	if err != nil {
-		return invalid(err.Error())
+	target, failure := m.resolveAppTarget(ctx, req.Args, true)
+	if failure != nil {
+		return *failure
 	}
-	user, err := androidUser(req.Args)
-	if err != nil {
-		return invalid(err.Error())
-	}
+	pkg := target.Package
+	user := target.User
 	switch action {
 	case "info", "permissions", "components":
 		result := m.runAndroid(ctx,
@@ -136,7 +256,8 @@ func (m *Manager) appInfo(ctx context.Context, req Request) Result {
 			return fail("NOT_FOUND", "应用不存在", os.ErrNotExist, result.Strategy)
 		}
 		result.Message = "应用详情读取成功"
-		result.Data = map[string]any{"package": pkg, "user": user, "raw": result.Stdout, "view": action}
+		result.Data = map[string]any{"package": pkg, "label": target.Label, "user": user, "view": action}
+		fitAppCommandPreview(&result, int(m.cfg.ResultPreviewBytes))
 		return result
 	case "path":
 		args := []string{"path"}
@@ -153,7 +274,7 @@ func (m *Manager) appInfo(ctx context.Context, req Request) Result {
 		}
 		paths := parsePMPaths(result.Stdout)
 		result.Message = "应用 APK 路径读取成功"
-		result.Data = map[string]any{"package": pkg, "user": user, "paths": paths}
+		result.Data = map[string]any{"package": pkg, "label": target.Label, "user": user, "paths": paths}
 		return result
 	default:
 		return invalidAction(req.Tool, action, "components", "info", "path", "permissions")
@@ -357,6 +478,28 @@ func (m *Manager) appManage(ctx context.Context, req Request) Result {
 	if err != nil || action == "" {
 		return invalid("action 不能为空")
 	}
+	if action == "start" {
+		target, failure := m.resolveAppTarget(ctx, req.Args, false)
+		if failure != nil {
+			return *failure
+		}
+		component, resolution, resolveErr := m.resolveLaunchComponent(ctx, target)
+		if resolveErr != nil {
+			result := fail("APP_NOT_LAUNCHABLE", "应用已安装，但没有可启动的 Activity", resolveErr, "android_package_resolve_activity")
+			result.Data = map[string]any{"query": target.Query, "package": target.Package, "label": target.Label, "user": target.User}
+			return result
+		}
+		result := m.runAndroidRoot(ctx, commandVariant{Name: "am", Args: []string{"start", "-W", "--user", target.User, "-n", component}, Strategy: "am_start_wait_component"})
+		if semanticErr := androidWaitStartError(result); semanticErr != nil {
+			failure := fail("START_FAILED", "Activity Manager 未能启动应用", semanticErr, "am_start_wait_component")
+			failure.Data = map[string]any{"query": target.Query, "package": target.Package, "label": target.Label, "user": target.User, "component": component, "resolution": resolution}
+			return failure
+		}
+		result.Message = "应用已解析并由 Activity Manager 确认启动"
+		result.Data = map[string]any{"query": target.Query, "package": target.Package, "label": target.Label, "user": target.User, "component": component, "resolution": resolution}
+		fitAppCommandPreview(&result, int(m.cfg.ResultPreviewBytes))
+		return result
+	}
 	pkg, err := packageName(req.Args)
 	if err != nil {
 		return invalid(err.Error())
@@ -413,17 +556,6 @@ func (m *Manager) appManage(ctx context.Context, req Request) Result {
 		result.Data = map[string]any{"package": pkg, "target": target, "action": action, "rawState": dump.Stdout}
 		result.Strategy += "_readback"
 		return result
-	case "start":
-		args := []string{"start"}
-		if user != "current" && user != "all" {
-			args = append(args, "--user", user)
-		}
-		if component, ok := req.Args["component"].(string); ok && component != "" {
-			args = append(args, "-n", component)
-		} else {
-			args = append(args, "-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER", "-p", pkg)
-		}
-		return m.runAndroidRoot(ctx, commandVariant{Name: "am", Args: args, Strategy: "am_start"})
 	case "stop", "force_stop":
 		args := []string{"force-stop"}
 		if user != "current" && user != "all" {

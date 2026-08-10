@@ -6,11 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"fmt"
-	"io"
 	"net"
-	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -68,7 +64,17 @@ func (m *Manager) networkOperation(ctx context.Context, req Request) Result {
 				req.Args["url"] = "https://connectivitycheck.gstatic.com/generate_204"
 			}
 		}
-		return httpRequest(ctx, req.Args)
+		return m.httpRequest(ctx, req.Args)
+	case "web_extract":
+		return m.webExtract(ctx, req)
+	case "browser_capture":
+		return m.browserCapture(ctx, req)
+	case "feed_parse":
+		return m.parseFeed(ctx, req)
+	case "cookie_list", "cookie_set", "cookie_delete", "cookie_clear":
+		return m.cookieOperation(req, action)
+	case "ws_connect", "ws_send", "ws_receive", "ws_ping", "ws_close", "ws_list":
+		return m.webSocketOperation(ctx, req, action)
 	case "ping":
 		host, parseErr := argString(req.Args, "host")
 		if parseErr != nil {
@@ -134,7 +140,7 @@ func (m *Manager) networkOperation(ctx context.Context, req Request) Result {
 		child["action"] = action
 		return m.connectivityOperation(ctx, Request{Tool: "zcr521_connectivity", Args: child})
 	default:
-		return invalidAction(req.Tool, action, "connections", "dns", "dns_lookup", "gateway", "http", "http_request", "interfaces", "internet_test", "ip", "lan_test", "ping", "port_check", "proxy", "resolve", "routes", "tcp_check", "wifi_info")
+		return invalidAction(req.Tool, action, "browser_capture", "connections", "cookie_clear", "cookie_delete", "cookie_list", "cookie_set", "dns", "dns_lookup", "feed_parse", "gateway", "http", "http_request", "interfaces", "internet_test", "ip", "lan_test", "ping", "port_check", "proxy", "resolve", "routes", "tcp_check", "web_extract", "wifi_info", "ws_close", "ws_connect", "ws_list", "ws_ping", "ws_receive", "ws_send")
 	}
 }
 
@@ -163,80 +169,6 @@ func networkInterfaces() ([]map[string]any, error) {
 		})
 	}
 	return out, nil
-}
-
-func httpRequest(ctx context.Context, args map[string]any) Result {
-	rawURL, err := argString(args, "url")
-	if err != nil {
-		return invalid(err.Error())
-	}
-	parsed, err := url.Parse(rawURL)
-	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-		return invalid("url 必须是有效 HTTP/HTTPS 地址")
-	}
-	method, err := argOptionalString(args, http.MethodGet, "method")
-	if err != nil {
-		return invalid(err.Error())
-	}
-	body, err := argOptionalString(args, "", "body")
-	if err != nil {
-		return invalid(err.Error())
-	}
-	headers, err := argStringMap(args, "headers")
-	if err != nil {
-		return invalid(err.Error())
-	}
-	timeout, err := argDuration(args, 30*time.Second)
-	if err != nil {
-		return invalid(err.Error())
-	}
-	maxBytes, err := argInt64(args, 4*1024*1024, "maxResponseBytes")
-	if err != nil || maxBytes <= 0 || maxBytes > 64*1024*1024 {
-		return invalid("maxResponseBytes 必须在 1 到 67108864 之间")
-	}
-	requestContext, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	request, err := http.NewRequestWithContext(requestContext, strings.ToUpper(method), rawURL, strings.NewReader(body))
-	if err != nil {
-		return invalid(err.Error())
-	}
-	for key, value := range headers {
-		request.Header.Set(key, value)
-	}
-	started := time.Now()
-	response, err := (&http.Client{Timeout: timeout}).Do(request)
-	if err != nil {
-		code := "NETWORK_ERROR"
-		if errors.Is(err, context.DeadlineExceeded) {
-			code = "TIMEOUT"
-		}
-		return fail(code, "HTTP 请求失败", err, "net_http")
-	}
-	defer response.Body.Close()
-	limited := io.LimitReader(response.Body, maxBytes+1)
-	content, err := io.ReadAll(limited)
-	if err != nil {
-		return fail("NETWORK_ERROR", "HTTP 响应读取失败", err, "net_http")
-	}
-	truncated := int64(len(content)) > maxBytes
-	if truncated {
-		content = content[:maxBytes]
-	}
-	headerMap := make(map[string][]string, len(response.Header))
-	for key, values := range response.Header {
-		headerMap[key] = append([]string(nil), values...)
-	}
-	data := map[string]any{
-		"url": rawURL, "status": response.StatusCode, "statusText": response.Status,
-		"headers": headerMap, "body": string(content), "truncated": truncated,
-		"durationMs": time.Since(started).Milliseconds(),
-	}
-	if response.StatusCode < 200 || response.StatusCode >= 400 {
-		result := fail("HTTP_ERROR", "HTTP 服务返回错误状态", fmt.Errorf("%s", response.Status), "net_http")
-		result.Data = data
-		return result
-	}
-	return ok("HTTP 请求成功", data, "net_http")
 }
 
 func readRoutes() ([]map[string]any, error) {
@@ -309,6 +241,7 @@ func readDNSConfiguration() map[string]any {
 type commandVariant struct {
 	Name     string
 	Args     []string
+	Dir      string
 	Strategy string
 }
 
@@ -319,7 +252,11 @@ func runFirstAvailable(ctx context.Context, m *Manager, variants []commandVarian
 			missing = append(missing, variant.Name)
 			continue
 		}
-		result := m.runCommand(ctx, commandSpec{Name: variant.Name, Args: variant.Args, Dir: m.cfg.WorkDir, Timeout: timeout, Strategy: variant.Strategy})
+		dir := variant.Dir
+		if dir == "" {
+			dir = m.cfg.WorkDir
+		}
+		result := m.runCommand(ctx, commandSpec{Name: variant.Name, Args: variant.Args, Dir: dir, Timeout: timeout, Strategy: variant.Strategy})
 		if result.Code != "COMMAND_UNAVAILABLE" {
 			return result
 		}

@@ -129,7 +129,7 @@ func TestEndToEndBrokerMCPTasksAndTransfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(toolList.Tools) != 48 {
+	if len(toolList.Tools) != 49 {
 		t.Fatalf("tools/list returned %d tools", len(toolList.Tools))
 	}
 	writeResult, err := session.CallTool(ctx, &mcp.CallToolParams{
@@ -150,16 +150,18 @@ func TestEndToEndBrokerMCPTasksAndTransfer(t *testing.T) {
 			"path":   "e2e/hello.txt",
 		},
 	})
-	if err != nil || readResult.IsError || !strings.Contains(textOf(readResult), "hello MCP") {
+	structured, _ := json.Marshal(readResult.StructuredContent)
+	if err != nil || readResult.IsError || !strings.Contains(string(structured), "hello MCP") {
 		t.Fatalf("read: err=%v result=%s", err, textOf(readResult))
 	}
 	background, err := session.CallTool(ctx, &mcp.CallToolParams{
-		Name: "zcr521_fs_hash",
+		Name: "zcr521_archive",
 		Arguments: map[string]any{
-			"action":     "calculate",
-			"path":       "e2e/hello.txt",
-			"algorithm":  "sha256",
-			"background": true,
+			"action":      "create",
+			"destination": "e2e/hello.zip",
+			"sources":     []string{"e2e/hello.txt"},
+			"format":      "zip",
+			"background":  true,
 		},
 	})
 	if err != nil || background.IsError {
@@ -170,30 +172,31 @@ func TestEndToEndBrokerMCPTasksAndTransfer(t *testing.T) {
 		t.Fatalf("missing task id: %v %s", err, textOf(background))
 	}
 	waitTask(t, session, accepted.TaskID)
-	testTaskExtension(t, httpServer.URL)
+	testTaskExtension(t, httpServer.URL, session)
 
 	testTransfer(t, httpServer.URL)
 	testSecurityDenials(t, httpServer.URL)
 }
 
-func testTaskExtension(t *testing.T, baseURL string) {
+func testTaskExtension(t *testing.T, baseURL string, session *mcp.ClientSession) {
 	t.Helper()
 	callBody := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      101,
 		"method":  "tools/call",
 		"params": map[string]any{
-			"name": "zcr521_fs_hash",
+			"name": "zcr521_archive",
 			"arguments": map[string]any{
-				"action":     "calculate",
-				"path":       "e2e/hello.txt",
-				"algorithm":  "sha256",
-				"background": true,
+				"action":      "create",
+				"destination": "e2e/hello-task.zip",
+				"sources":     []string{"e2e/hello.txt"},
+				"format":      "zip",
+				"background":  true,
 			},
 			"_meta": taskMeta(true),
 		},
 	}
-	callResponse := taskHTTPCall(t, baseURL, callBody, "tools/call", "zcr521_fs_hash")
+	callResponse := taskHTTPCall(t, baseURL, callBody, "tools/call", "zcr521_archive")
 	if callResponse.StatusCode != http.StatusOK {
 		raw, _ := io.ReadAll(callResponse.Body)
 		_ = callResponse.Body.Close()
@@ -233,6 +236,7 @@ func testTaskExtension(t *testing.T, baseURL string) {
 		(got.Result.Status != "working" && got.Result.Status != "completed") {
 		t.Fatalf("invalid tasks/get result: %#v", got)
 	}
+	waitTask(t, session, created.Result.TaskID)
 
 	unknownBody := map[string]any{
 		"jsonrpc": "2.0",
@@ -441,6 +445,12 @@ func waitTask(t *testing.T, session *mcp.ClientSession, id string) {
 func textOf(result *mcp.CallToolResult) string {
 	if result == nil {
 		return ""
+	}
+	if result.StructuredContent != nil {
+		raw, err := json.Marshal(result.StructuredContent)
+		if err == nil {
+			return string(raw)
+		}
 	}
 	for _, content := range result.Content {
 		if text, ok := content.(*mcp.TextContent); ok {

@@ -1,14 +1,33 @@
 # 测试报告
 
-版本：`0.01`
-报告日期：2026-07-30
+版本：`0.02`
+报告日期：2026-08-10
 可复现时间戳：`SOURCE_DATE_EPOCH=1785340800`
 
 ## 结论
 
-全部可在当前主机执行的单元、集成、竞态、静态、安全、定向 Fuzz、协议和构建闸门均通过。官方 MCP 合规套件中适用于本项目固定 48 工具契约的检查通过；要求 `greet`、`slow_compute`、`failing_job` 等套件专用夹具的检查明确记为“不适用”，没有向产品加入假工具来换取通过率。
+本轮执行了应用发现相关的必要定向测试、修改路径定向 vet、Schema 再生成和三 ABI 构建/模块校验；均通过。按要求未运行全量测试，也未重跑全量竞态、全量 vet、Fuzz 或官方合规套件，不对这些未执行项目作本轮通过声明。具体命令与最终 ZIP 信息见下表。
 
-当前环境没有连接 Android 设备或模拟器。安装、重启自启动、UID 2000 实际降权、Root 框架、SELinux Enforcing、4 KiB/16 KiB 设备运行、厂商 ROM 与真实 7z 执行均为“设备未测试”，不能由主机构建结果替代。
+本轮连接并只在一台 OnePlus OPD2404、Android 16 / API 36、user 0、KernelSU、SELinux Enforcing 真机上验证名称查询与启动；最后一轮直接运行最终 ZIP 内逐字节相同的 arm64 产物。设置、电话本多入口、隐藏应用、无 Launcher 应用、无匹配应用和连续分页均返回预期结果；临时验证服务和文件已清理，原 `0.01` 服务与局域网地址保持可用。API 26–35、其他用户/工作资料、4 KiB 页面设备和其他厂商 ROM 未做真机验证，不能由 API 36 结果替代。
+
+## 本轮必要闸门
+
+| 范围 | 命令/证据 | 结果 |
+|---|---|---|
+| 应用发现 | `go test ./internal/ops ./internal/schema ./internal/service ./internal/mcpapi -count=1` | 通过；覆盖名称归一化、安装状态、同名歧义、多 Launcher、组件归属、分页/预算和启动语义 |
+| 静态分析 | `go vet ./internal/ops ./internal/schema` | 通过 |
+| 真机 | 最终 ZIP arm64 产物在 API 36 上按“设置”“电话本”“隐藏应用列表”“无线耳机”和不存在名称查询/启动 | 通过；可启动应用返回真实组件和 `Status: ok`，已安装但无入口返回 `APP_NOT_LAUNCHABLE`，不再误报未安装 |
+| 局域网 | 真机直接访问 `http://192.168.1.61:5322/status` | 通过；`mcpAddress` 为 `http://192.168.1.61:5322/mcp`，版本仍为 `0.01` |
+| Helper 门禁 | `TestEmbeddedAppQueryHelper`；源码/JAR SHA-256、DEX min API 与协议标记 | 通过；`-SkipTests` 构建也不会跳过 |
+| 发布包 | `build.ps1 -SkipTests -Skip7Zip`；三 ABI daemon 与已有 7zz 均通过 machine/PIE/16 KiB 校验，正式 ZIP 18 个唯一条目 | 通过 |
+| 模块验包 | `scripts/verify_module.py dist/ZCR521-Android-AI-MCP-v0.01-universal.zip` | 通过；精确条目、许可证、脚本、权限和六个 ELF 均符合门禁 |
+| 全量测试 | 未运行 | 按本轮要求仅做必要测试 |
+
+当前 ZIP：`ZCR521-Android-AI-MCP-v0.02-universal.zip`，19,675,516 bytes，SHA-256 `f7af3cf9a8de4240b3542d8e81ffcb1ad3bc20d3a5cb946392021c5e5cd03b1d`。
+
+以下章节保留 2026-07-30 的历史基线，仅供回溯；本轮未重新执行，不代表当前全量结果。
+
+## 2026-07-30 历史基线
 
 ## 测试环境
 
@@ -42,7 +61,7 @@
 | 归档 | ZIP、TAR、GZIP、XZ、tar.xz 测试 | 往返、`../`、绝对路径、TAR 越界链接和符号链接组件防护通过 |
 | APKS/XAPK | 固定 `toc.pb` 与清单夹具 | ABI、密度、语言、SDK、OBB 包目录边界通过 |
 | Schema | `internal/schema` 测试与 `schemas/tools.json` | 48 个唯一工具；JSON Schema 2020-12；`action` enum/`oneOf`；结果结构完整 |
-| 状态页 | 单元测试 + 浏览器 QA | 1280×720、390×844 无横向溢出；安全警告可见；控制台 0 错误/警告 |
+| 状态页 | 单元测试 + 浏览器 QA | 1280×720、390×844 无横向溢出；安全警告可见；页面 0 错误/警告 |
 | 模块脚本 | Shell 语法与 `verify_module.py` | LF、入口、权限、三 ABI、安装选择和卸载边界通过 |
 
 ## 最终二进制运行时验收
@@ -116,7 +135,7 @@ Windows 当前令牌没有创建符号链接的权限，因此“已有符号链
 - 桌面 1280×720：六张状态卡为三列；背景 `rgb(241,243,246)`；卡片为半透明白色、细边框和 `blur(16px)`。
 - 窄屏 390×844：卡片改单列，文案换行，无横向溢出，Root LAN 警告位于首屏。
 - 页面无紫色渐变，无持续动画；`prefers-reduced-motion` 禁用一次性入场动画。
-- 状态页控制台 0 条 error/warn。
+- 状态页 0 条 error/warn。
 - 浏览器后端的多个测试标签始终报告 `document.hidden=false`，无法动态触发 visibility；隐藏时清定时器和中止请求由 `TestAssetsMeetMotionAndIdleRequirements` 静态/单元验证。
 
 ## 必须补充的设备证据

@@ -2,7 +2,7 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-VERSION=${VERSION:-0.01}
+VERSION=${VERSION:-0.02}
 SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-1785340800}
 NDK=${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}
 GO_BIN=${GO_BIN:-go}
@@ -27,6 +27,7 @@ fi
 cd "$ROOT"
 export SOURCE_DATE_EPOCH GOTOOLCHAIN=local
 "$GO_BIN" mod verify
+"$GO_BIN" test ./internal/ops -run '^TestEmbeddedAppQueryHelper$' -count=1
 if [ "$SKIP_TESTS" != "1" ]; then
   "$GO_BIN" test ./...
   "$GO_BIN" test -race ./...

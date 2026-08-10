@@ -3,9 +3,12 @@ module github.com/zcr521/android-ai-mcp
 go 1.26.0
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/modelcontextprotocol/go-sdk v1.7.0-pre.3
 	github.com/ulikunitz/xz v0.5.15
+	golang.org/x/net v0.51.0
 	golang.org/x/sys v0.41.0
+	golang.org/x/text v0.34.0
 )
 
 require (

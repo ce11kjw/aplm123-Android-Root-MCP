@@ -35,7 +35,7 @@ func New(caller Caller) (*API, error) {
 	}
 	// The SDK exposes prompts/list even when the prompt store is empty. Declare
 	// that empty, stable collection so current-protocol discovery matches the
-	// methods the server actually honors. The 48-tool catalog is static for a
+	// methods the server actually honors. The 49-tool catalog is static for a
 	// running process, therefore listChanged must remain false.
 	capabilities := &mcp.ServerCapabilities{
 		Prompts: &mcp.PromptCapabilities{ListChanged: false},
@@ -50,11 +50,11 @@ func New(caller Caller) (*API, error) {
 		Description: "Android Root 文件、Shell、应用、系统、网络、诊断与自动化工具。",
 		Version:     buildinfo.Version,
 	}, &mcp.ServerOptions{
-		Instructions: "这是完整 Root 能力服务。破坏性操作必须先确认目标；大文件应使用 ResourceLink 或分块传输。",
+		Instructions: "这是完整 Root 能力服务。非平凡任务先用 zcr521_skill.match 匹配至多 3 条技能摘要，仅在摘要不足时用 get 加载最相关的 1 条正文，禁止一次加载全部技能；普通工具也会自动返回匹配提示。破坏性操作必须先确认目标；大文件使用 ResourceLink、分页或分块传输。",
 		Capabilities: capabilities,
 	})
 	api := &API{server: server, caller: caller}
-	for _, definition := range schema.All(buildinfo.ProtocolCurrent).Tools {
+	for _, definition := range schema.RuntimeCompact(buildinfo.ProtocolCurrent).Tools {
 		api.register(definition)
 	}
 	return api, nil
@@ -96,12 +96,12 @@ func (a *API) register(definition schema.Tool) {
 			decoderErr := json.Unmarshal(request.Params.Arguments, &args)
 			if decoderErr != nil {
 				result := model.Failure("INVALID_ARGUMENT", "工具参数必须是 JSON 对象", "DecodeError", decoderErr.Error())
-				return toolResult(result), nil
+				return toolResult(result, currentProtocol(request)), nil
 			}
 		}
 		result := a.caller.Call(ctx, name, args)
 		a.publishArtifacts(&result)
-		return toolResult(result), nil
+		return toolResult(result, currentProtocol(request)), nil
 	})
 }
 
@@ -131,14 +131,24 @@ func (a *API) publishArtifacts(result *model.Result) {
 	}
 }
 
-func toolResult(result model.Result) *mcp.CallToolResult {
-	raw, err := json.Marshal(result)
+func toolResult(result model.Result, compact bool) *mcp.CallToolResult {
+	structured := result
+	structured.Meta = nil
+	raw, err := json.Marshal(structured)
 	if err != nil {
 		fallback := model.Failure("RESULT_ENCODING_FAILED", "工具结果编码失败", "EncodingError", err.Error())
 		raw, _ = json.Marshal(fallback)
 		result = fallback
+		structured = fallback
 	}
-	content := []mcp.Content{&mcp.TextContent{Text: string(raw)}}
+	text := string(raw)
+	if compact {
+		text = result.Code + ": " + result.Message
+		if result.TaskID != "" {
+			text += " (taskId=" + result.TaskID + ")"
+		}
+	}
+	content := []mcp.Content{&mcp.TextContent{Text: text}}
 	for _, artifact := range result.Artifacts {
 		if artifact.URI == "" {
 			continue
@@ -162,10 +172,15 @@ func toolResult(result model.Result) *mcp.CallToolResult {
 		})
 	}
 	return &mcp.CallToolResult{
+		Meta:              mcp.Meta(result.Meta),
 		Content:           content,
-		StructuredContent: result,
+		StructuredContent: structured,
 		IsError:           !result.Success,
 	}
+}
+
+func currentProtocol(request *mcp.CallToolRequest) bool {
+	return request != nil && request.ProtocolVersion() == buildinfo.ProtocolCurrent
 }
 
 func boolPointer(value bool) *bool {
