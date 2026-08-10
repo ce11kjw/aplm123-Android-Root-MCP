@@ -88,6 +88,10 @@ func TestSensitiveBackgroundArgumentsAreRejectedAndNeverPersisted(t *testing.T) 
 	cfg := config.Default()
 	cfg.Paths.StateDir = filepath.Join(root, "state")
 	cfg.Paths.WorkDir = filepath.Join(root, "work")
+	cfg.Paths.DownloadsDir = ""
+	cfg.Paths.UploadsDir = ""
+	cfg.Paths.ArtifactsDir = ""
+	cfg.Paths.TempDir = ""
 	cfg = config.Normalize(cfg)
 	if err := config.EnsureDirectories(cfg); err != nil {
 		t.Fatal(err)
@@ -140,6 +144,10 @@ func TestRestartDoesNotReplayUncertainNetworkPOST(t *testing.T) {
 	cfg := config.Default()
 	cfg.Paths.StateDir = filepath.Join(root, "state")
 	cfg.Paths.WorkDir = filepath.Join(root, "work")
+	cfg.Paths.DownloadsDir = ""
+	cfg.Paths.UploadsDir = ""
+	cfg.Paths.ArtifactsDir = ""
+	cfg.Paths.TempDir = ""
 	cfg = config.Normalize(cfg)
 	if err := config.EnsureDirectories(cfg); err != nil {
 		t.Fatal(err)
