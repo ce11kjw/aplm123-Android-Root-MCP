@@ -9987,6 +9987,14 @@
             "description": "要执行的 Shell 命令。",
             "type": "string"
           },
+          "commands": {
+            "description": "多条远端命令，在同一个连接上顺序执行（exec 形态三）。",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 32,
+            "type": "array"
+          },
           "cwd": {
             "description": "子进程工作目录；相对路径基于默认工作目录。",
             "minLength": 1,
@@ -10019,6 +10027,28 @@
           "insecure": {
             "description": "跳过 SSH 主机密钥校验（不安全，仅用于可信内网调试）。",
             "type": "boolean"
+          },
+          "jobs": {
+            "description": "每个会话执行各自的命令，元素为 {sessionId, command}（exec 形态四）。",
+            "items": {
+              "properties": {
+                "command": {
+                  "description": "该会话要执行的命令。",
+                  "type": "string"
+                },
+                "sessionId": {
+                  "description": "SSH 会话 ID。",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sessionId",
+                "command"
+              ],
+              "type": "object"
+            },
+            "maxItems": 32,
+            "type": "array"
           },
           "keep": {
             "description": "connect 时是否保留会话供后续复用。",
@@ -10095,6 +10125,14 @@
             "maximum": 65535,
             "minimum": 1,
             "type": "integer"
+          },
+          "targets": {
+            "description": "多个会话 ID，并行执行同一条 command（exec 形态四）。",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 32,
+            "type": "array"
           },
           "timeout": {
             "description": "超时秒数或 Go 风格时长。",

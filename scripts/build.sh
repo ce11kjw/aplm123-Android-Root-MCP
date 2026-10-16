@@ -14,8 +14,8 @@ if [ -z "$NDK" ] || [ ! -d "$NDK" ]; then
   printf '%s\n' "ANDROID_NDK_HOME 必须指向 NDK r29。" >&2
   exit 2
 fi
-if [ "$($GO_BIN env GOVERSION)" != "go1.26.5" ]; then
-  printf '%s\n' "构建必须使用 Go 1.26.5。" >&2
+if [ "$($GO_BIN env GOVERSION)" != "go1.27.1" ]; then
+  printf '%s\n' "构建必须使用 Go 1.27.1。" >&2
   exit 2
 fi
 if [ ! -f "$NDK/source.properties" ] ||

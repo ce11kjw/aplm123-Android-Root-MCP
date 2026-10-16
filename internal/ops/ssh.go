@@ -23,12 +23,26 @@ const (
 	sshDefaultPort       = 22
 	sshDefaultTimeout    = 30 * time.Second
 	sshDialTimeout       = 15 * time.Second
-	sshMaxSessions       = 8
+	// sshMaxSessions 是**保留会话**（keep=true / 复用 sessionId）的数量上限。
+	// 取 32 与 frontend 的 maxConnections 对齐：会话内部复用同一条 TCP 连接，
+	// 不会额外放大服务端连接数。注意一次性 exec（不传 sessionId）不进池。
+	sshMaxSessions       = 32
+	// sshSessionIdle 决定空闲会话多久被自动回收。之前只定义未使用，
+	// 导致调用方忘记 close 时会话永久占用名额；现在由 evictIdle 真正执行。
 	sshSessionIdle       = 10 * time.Minute
 	sshMaxCommandBytes   = 32 << 10
 	sshMaxStdinBytes     = 1 << 20
 	sshMaxOutputBytes    = 4 << 20
 	sshMaxForwardBytes   = 4 << 20
+	// sshMaxBatch 限制单次 exec 展开的命令/目标数量，避免一次调用吃满资源。
+	sshMaxBatch          = 32
+	// sshBatchConcurrency 是 targets/jobs 扇出时的并发上限，与服务端 totalTasks 对齐。
+	sshBatchConcurrency  = 8
+	// sshSessionSweepInterval 是后台清扫空闲会话的间隔。
+	sshSessionSweepInterval = time.Minute
+	// sshLimitMessageMaxSessions 限制上限报错里列出的会话条数，
+	// 避免批量场景下错误信息过长、把大量内网地址写进日志。
+	sshLimitMessageMaxSessions = 5
 	sshDefaultKnownHosts = "/storage/emulated/0/aplm123AI/.aplm123-state/ssh/known_hosts"
 	sshDefaultKeyDir     = "/storage/emulated/0/aplm123AI/.aplm123-state/ssh/keys"
 )
@@ -95,6 +109,8 @@ func (m *Manager) sshState() *sshRuntime {
 		m.sshMu.Lock()
 		if m.ssh == nil {
 			m.ssh = &sshRuntime{}
+			// 后台周期回收空闲会话：调用方忘记 close 时也能自愈。
+			m.ssh.startSweeper(m.closed)
 		}
 		m.sshMu.Unlock()
 	}
@@ -149,10 +165,120 @@ func (r *sshRuntime) closeAll() {
 	}
 }
 
+// evictIdle 回收空闲超时的会话，返回被回收的数量。
+//
+// 为什么需要：会话只在显式 close 时释放，调用方一旦忘记 close，
+// 名额就被永久占用，表现为「SSH 会话数已达上限」却看不到活跃连接。
+// 有了它，即使调用方不 close 也能自愈。
+//
+// 保护规则：
+//   - 带活跃端口转发的会话**不回收** —— 转发是长期存在的，
+//     杀掉会断掉用户正在使用的隧道，与「建完就挂着」的语义冲突。
+//   - 已关闭的会话直接清理出表。
+func (r *sshRuntime) evictIdle(ttl time.Duration) int {
+	if r == nil || ttl <= 0 {
+		return 0
+	}
+	now := time.Now()
+	evicted := 0
+	for _, session := range r.list() {
+		if session.idle(now) < ttl {
+			continue
+		}
+		if session.hasForwards() {
+			continue
+		}
+		session.shutdown()
+		r.remove(session.id)
+		evicted++
+	}
+	return evicted
+}
+
+// admit 在建立新会话前腾出名额：先回收空闲会话，再判断是否真的满了。
+// 返回错误时说明即使回收后也没有可用名额。
+func (r *sshRuntime) admit() error {
+	if r.count() < sshMaxSessions {
+		return nil
+	}
+	if r.evictIdle(sshSessionIdle) > 0 && r.count() < sshMaxSessions {
+		return nil
+	}
+	return fmt.Errorf("%s", r.limitMessage())
+}
+
+// limitMessage 说明当前为何无法再建会话，并列出可关闭的候选。
+// 只说「请先关闭不用的会话」会让调用方无从下手，所以附上会话清单。
+//
+// 清单只列前若干个：批量场景下会话可能很多，全部拼接会让错误信息过长，
+// 也会把大量内网地址写进日志。
+func (r *sshRuntime) limitMessage() string {
+	sessions := r.list()
+	var b strings.Builder
+	fmt.Fprintf(&b, "SSH 会话数已达上限 %d，且没有可自动回收的空闲会话", sshMaxSessions)
+	if len(sessions) == 0 {
+		return b.String()
+	}
+	now := time.Now()
+	b.WriteString("。当前会话：")
+	for i, session := range sessions {
+		if i >= sshLimitMessageMaxSessions {
+			fmt.Fprintf(&b, "…等共 %d 条", len(sessions))
+			break
+		}
+		if i > 0 {
+			b.WriteString("；")
+		}
+		idle := session.idle(now).Truncate(time.Second)
+		fmt.Fprintf(&b, "%s(%s:%d 空闲 %s)", session.id, session.host, session.port, idle)
+	}
+	b.WriteString("。可用 aplm_ssh close 关闭指定会话，或传 all=true 全部关闭。")
+	return b.String()
+}
+
+// startSweeper 启动后台清扫，周期回收空闲会话。
+// 传入的 done 通道关闭后协程退出（由 Manager.Close 触发）。
+func (r *sshRuntime) startSweeper(done <-chan struct{}) {
+	if r == nil || done == nil {
+		return
+	}
+	r.once.Do(func() {
+		go func() {
+			ticker := time.NewTicker(sshSessionSweepInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-done:
+					return
+				case <-ticker.C:
+					r.evictIdle(sshSessionIdle)
+				}
+			}
+		}()
+	})
+}
+
 func (s *sshSession) touch() {
 	s.mu.Lock()
 	s.lastUsed = time.Now()
 	s.mu.Unlock()
+}
+
+// idle 返回距今多久没被使用过。
+func (s *sshSession) idle(now time.Time) time.Duration {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.lastUsed.IsZero() {
+		return now.Sub(s.createdAt)
+	}
+	return now.Sub(s.lastUsed)
+}
+
+// hasForwards 判断会话上是否挂着活跃的端口转发。
+func (s *sshSession) hasForwards() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.listeners) > 0
 }
 
 func (s *sshSession) setError(err error) {
@@ -606,10 +732,32 @@ func sanitizeSSHError(err error) string {
 }
 
 // dialSSH 建立一条连接，并登记为可复用的会话。
+// findByTarget 找出指向同一目标的存活会话。
+// 批量场景下反复 connect 同一台机器很常见，复用可以避免占满名额。
+func (r *sshRuntime) findByTarget(host string, port int, user string) (*sshSession, bool) {
+	for _, session := range r.list() {
+		if session.matches(host, port, user) {
+			return session, true
+		}
+	}
+	return nil, false
+}
+
+// matches 判断会话是否指向给定目标（host 不区分大小写）。
+func (s *sshSession) matches(host string, port int, user string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return false
+	}
+	return strings.EqualFold(s.host, host) && s.port == port && s.user == user
+}
+
 func (m *Manager) dialSSH(ctx context.Context, conn sshConnectionArgs) (*sshSession, error) {
 	runtime := m.sshState()
-	if runtime.count() >= sshMaxSessions {
-		return nil, fmt.Errorf("SSH 会话数已达上限 %d，请先关闭不用的会话", sshMaxSessions)
+	// 先回收空闲会话再判断名额，避免调用方忘记 close 导致的永久占用。
+	if err := runtime.admit(); err != nil {
+		return nil, err
 	}
 	cfg, policy, err := buildSSHClientConfig(conn)
 	if err != nil {
@@ -693,6 +841,15 @@ func (m *Manager) sshConnect(req Request) Result {
 	}
 
 	if keep {
+		// 同一目标已有存活会话时直接复用，避免反复 connect 占满名额。
+		// 批量场景（同一台机器跑多次 connect）下这一条能省掉大量槽位。
+		if existing, found := m.sshState().findByTarget(conn.Host, conn.Port, conn.User); found {
+			existing.touch()
+			data := existing.summary()
+			data["connected"] = true
+			data["reused"] = true
+			return ok("SSH 会话已存在，复用现有会话", data, "ssh_connect_reuse")
+		}
 		// 复用完整握手路径，拿到带主机密钥指纹的会话。
 		session, dialErr := m.dialSSH(context.Background(), conn)
 		if dialErr != nil {
@@ -763,57 +920,157 @@ func (m *Manager) sshConnect(req Request) Result {
 	return ok("SSH 连接成功", data, "ssh_connect")
 }
 
+// sshExecRequest 是一次远端执行的全部参数（已解析）。
+// 抽出来是为了让 commands/targets/jobs 三种批量形态共用同一条执行路径。
+type sshExecRequest struct {
+	command string
+	timeout time.Duration
+	stdin   string
+	env     map[string]string
+	cwd     string
+}
+
+// sshExec 是 aplm_ssh exec 的入口，支持四种形态：
+//
+//  1. 单条一次性执行（默认）：连上、跑完、断开，不进会话池。
+//  2. 复用会话：传 sessionId，在已有会话上执行（不新建连接）。
+//  3. 多条命令：传 commands:[...]，一次连接顺序跑完。
+//  4. 扇出：
+//     - targets:[sessionId...] + command  → 多个会话跑同一条命令
+//     - jobs:[{sessionId,command}...]     → 每个会话跑各自的命令
+//
+// 形态 3/4 的存在意义：把「N 台机器 × M 条命令」收敛成一次 MCP 调用，
+// 既省掉大量往返，也避免调用方反复 connect 把会话名额占满。
 func (m *Manager) sshExec(ctx context.Context, req Request) Result {
-	command, err := argString(req.Args, "command", "cmd")
+	base, err := m.parseExecBase(req)
 	if err != nil {
+		return invalid(err.Error())
+	}
+
+	// 形态 4b：jobs 优先，指定每个会话跑什么。
+	if raw, ok := req.Args["jobs"]; ok && raw != nil {
+		return m.execJobs(ctx, base, raw)
+	}
+	// 形态 4a：targets 复用同一命令扇出。
+	if raw, ok := req.Args["targets"]; ok && raw != nil {
+		return m.execTargets(ctx, base, raw)
+	}
+	// 形态 3：多条命令在同一个连接上顺序执行。
+	if raw, ok := req.Args["commands"]; ok && raw != nil {
+		return m.execCommands(ctx, req, base, raw)
+	}
+
+	// 形态 1/2：单条命令。有 sessionId 就复用，否则新建一次性连接。
+	if base.command == "" {
 		return invalid("缺少参数 command")
 	}
-	if strings.TrimSpace(command) == "" {
-		return invalid("command 不能为空")
-	}
-	if len(command) > sshMaxCommandBytes {
+	if len(base.command) > sshMaxCommandBytes {
 		return invalid(fmt.Sprintf("command 超过 %d 字节上限", sshMaxCommandBytes))
 	}
+
+	if id, ok := execSessionID(req.Args); ok {
+		session, found := m.sshState().get(id)
+		if !found {
+			return fail("SSH_SESSION_NOT_FOUND", "SSH 会话不存在："+id, nil, "SSH_SESSION_NOT_FOUND")
+		}
+		one := m.runOnSession(ctx, session, base)
+		return one.result
+	}
+
 	conn, err := parseSSHArgs(req.Args, m.cfg.WorkDir)
 	if err != nil {
 		return fail("SSH_ARGUMENT_INVALID", err.Error(), nil, "SSH_ARGUMENT_INVALID")
 	}
-	timeout, err := argDuration(req.Args, m.cfg.ShellTimeout)
-	if err != nil {
-		return invalid(err.Error())
-	}
-	stdin, err := argOptionalString(req.Args, "", "stdin", "input")
-	if err != nil {
-		return invalid(err.Error())
-	}
-	if len(stdin) > sshMaxStdinBytes {
-		return invalid(fmt.Sprintf("stdin 超过 %d 字节上限", sshMaxStdinBytes))
-	}
-	envMap, err := argStringMap(req.Args, "env")
-	if err != nil {
-		return invalid(err.Error())
-	}
-	cwd, err := argOptionalString(req.Args, "", "cwd", "workdir")
-	if err != nil {
-		return invalid(err.Error())
-	}
-
-	started := time.Now()
 	session, err := m.dialSSH(ctx, conn)
 	if err != nil {
 		return fail("SSH_CONNECT_FAILED", err.Error(), nil, "SSH_CONNECT_FAILED")
 	}
-	defer session.shutdown()
+	// 一次性执行：跑完立刻断开，并从会话池移除。
+	// 只 shutdown 不移除会让僵尸条目永久占用名额。
+	defer func() {
+		session.shutdown()
+		m.sshState().remove(session.id)
+	}()
+	return m.runOnSession(ctx, session, base).result
+}
+
+// parseExecBase 解析四种形态共用的参数。
+// 注意这里不校验 command 是否为空 —— commands/targets/jobs 形态允许不传单条 command。
+func (m *Manager) parseExecBase(req Request) (sshExecRequest, error) {
+	out := sshExecRequest{timeout: m.cfg.ShellTimeout}
+	command, err := argOptionalString(req.Args, "", "command", "cmd")
+	if err != nil {
+		return out, err
+	}
+	out.command = command
+
+	timeout, err := argDuration(req.Args, m.cfg.ShellTimeout)
+	if err != nil {
+		return out, err
+	}
+	out.timeout = timeout
+
+	stdin, err := argOptionalString(req.Args, "", "stdin", "input")
+	if err != nil {
+		return out, err
+	}
+	if len(stdin) > sshMaxStdinBytes {
+		return out, fmt.Errorf("stdin 超过 %d 字节上限", sshMaxStdinBytes)
+	}
+	out.stdin = stdin
+
+	envMap, err := argStringMap(req.Args, "env")
+	if err != nil {
+		return out, err
+	}
+	out.env = envMap
+
+	cwd, err := argOptionalString(req.Args, "", "cwd", "workdir")
+	if err != nil {
+		return out, err
+	}
+	out.cwd = cwd
+	return out, nil
+}
+
+// execSessionID 从参数里取出可选的会话 ID。
+func execSessionID(args map[string]any) (string, bool) {
+	for _, key := range []string{"sessionId", "session"} {
+		if value, ok := args[key]; ok {
+			if text, ok := value.(string); ok {
+				if trimmed := strings.TrimSpace(text); trimmed != "" {
+					return trimmed, true
+				}
+			}
+		}
+	}
+	return "", false
+}
+
+// execOutcome 是单次远端执行的结果，便于批量形态汇总。
+type execOutcome struct {
+	result   Result
+	exitCode int
+}
+
+// runOnSession 在给定会话上执行一条命令。
+//
+// 与旧实现的关键差别：**不再关闭会话**（由调用方决定生命周期），
+// 并在成功/失败后刷新 lastUsed，让空闲回收能正确判断活跃度。
+func (m *Manager) runOnSession(ctx context.Context, session *sshSession, spec sshExecRequest) execOutcome {
+	started := time.Now()
+	session.touch()
 
 	sshSession, err := session.client.NewSession()
 	if err != nil {
-		return fail("SSH_SESSION_FAILED", "创建远端会话失败："+sanitizeSSHError(err), nil, "SSH_SESSION_FAILED")
+		session.setError(err)
+		return execOutcome{result: fail("SSH_SESSION_FAILED", "创建远端会话失败："+sanitizeSSHError(err), nil, "SSH_SESSION_FAILED")}
 	}
 	defer sshSession.Close()
 
-	for name, value := range envMap {
+	for name, value := range spec.env {
 		if strings.ContainsAny(name, "=\x00") {
-			return invalid("env 变量名非法")
+			return execOutcome{result: invalid("env 变量名非法")}
 		}
 		_ = sshSession.Setenv(name, value)
 	}
@@ -823,14 +1080,14 @@ func (m *Manager) sshExec(ctx context.Context, req Request) Result {
 	stderr.limit = sshMaxOutputBytes
 	sshSession.Stdout = &stdout
 	sshSession.Stderr = &stderr
-	if stdin != "" {
-		sshSession.Stdin = strings.NewReader(stdin)
+	if spec.stdin != "" {
+		sshSession.Stdin = strings.NewReader(spec.stdin)
 	}
 
-	full := command
-	if strings.TrimSpace(cwd) != "" {
+	full := spec.command
+	if strings.TrimSpace(spec.cwd) != "" {
 		// cwd 走远端 shell 语义，必须单引号转义，避免注入。
-		full = "cd " + shellSingleQuote(cwd) + " && " + command
+		full = "cd " + shellSingleQuote(spec.cwd) + " && " + spec.command
 	}
 
 	type execResult struct {
@@ -847,46 +1104,49 @@ func (m *Manager) sshExec(ctx context.Context, req Request) Result {
 		_ = sshSession.Signal(ssh.SIGKILL)
 		_ = sshSession.Close()
 		<-done
-		return withData(
+		return execOutcome{result: withData(
 			fail("SSH_EXEC_CANCELLED", "SSH 命令被取消", errors.New("SSH 命令被取消"), "SSH_EXEC_CANCELLED"),
 			map[string]any{
-				"host": conn.Host, "durationMs": time.Since(started).Milliseconds()},
-		)
-	case <-time.After(timeout):
+				"host": session.host, "durationMs": time.Since(started).Milliseconds()},
+		)}
+	case <-time.After(spec.timeout):
 		_ = sshSession.Signal(ssh.SIGKILL)
 		_ = sshSession.Close()
 		<-done
-		return withData(
-			fail("SSH_EXEC_TIMEOUT", fmt.Sprintf("SSH 命令超时（%s）", timeout), errors.New(fmt.Sprintf("SSH 命令超时（%s）", timeout)), "SSH_EXEC_TIMEOUT"),
+		return execOutcome{result: withData(
+			fail("SSH_EXEC_TIMEOUT", fmt.Sprintf("SSH 命令超时（%s）", spec.timeout), errors.New(fmt.Sprintf("SSH 命令超时（%s）", spec.timeout)), "SSH_EXEC_TIMEOUT"),
 			map[string]any{
-				"host": conn.Host, "code": "SSH_EXEC_TIMEOUT", "stdout": stdout.String(), "stderr": stderr.String(), "durationMs": time.Since(started).Milliseconds()},
-		)
+				"host": session.host, "code": "SSH_EXEC_TIMEOUT", "stdout": stdout.String(), "stderr": stderr.String(), "durationMs": time.Since(started).Milliseconds()},
+		)}
 	case result := <-done:
 		runErr = result.err
 	}
 
 	duration := time.Since(started).Milliseconds()
+	session.touch()
 	exitCode := 0
 	if runErr != nil {
 		var exitErr *ssh.ExitError
 		if errors.As(runErr, &exitErr) {
 			exitCode = exitErr.ExitStatus()
 		} else {
-			// 连接层错误：会话已不可信，立即回收。
+			// 连接层错误：会话已不可信，标记后由调用方回收。
 			session.setError(runErr)
-			_ = session
-			return withData(
-				fail("SSH_EXEC_FAILED", "SSH 命令执行失败："+sanitizeSSHError(runErr), errors.New("SSH 命令执行失败："+sanitizeSSHError(runErr)), "SSH_EXEC_FAILED"),
-				map[string]any{
-					"stdout": stdout.String(), "stderr": stderr.String(), "host": conn.Host, "durationMs": duration},
-			)
+			return execOutcome{
+				exitCode: -1,
+				result: withData(
+					fail("SSH_EXEC_FAILED", "SSH 命令执行失败："+sanitizeSSHError(runErr), errors.New("SSH 命令执行失败："+sanitizeSSHError(runErr)), "SSH_EXEC_FAILED"),
+					map[string]any{
+						"stdout": stdout.String(), "stderr": stderr.String(), "host": session.host, "durationMs": duration},
+				)}
 		}
 	}
 
 	data := map[string]any{
-		"host":       conn.Host,
-		"port":       conn.Port,
-		"user":       conn.User,
+		"host":       session.host,
+		"port":       session.port,
+		"user":       session.user,
+		"sessionId":  session.id,
 		"exitCode":   exitCode,
 		"stdout":     stdout.String(),
 		"stderr":     stderr.String(),
@@ -897,12 +1157,305 @@ func (m *Manager) sshExec(ctx context.Context, req Request) Result {
 		data["outputLimitBytes"] = sshMaxOutputBytes
 	}
 	if exitCode != 0 {
-		return withData(fail("SSH_COMMAND_FAILED", fmt.Sprintf("远端命令退出码 %d", exitCode), errors.New(fmt.Sprintf("远端命令退出码 %d", exitCode)), "SSH_COMMAND_FAILED"), data)
+		return execOutcome{exitCode: exitCode, result: withData(
+			fail("SSH_COMMAND_FAILED", fmt.Sprintf("远端命令退出码 %d", exitCode), errors.New(fmt.Sprintf("远端命令退出码 %d", exitCode)), "SSH_COMMAND_FAILED"), data)}
 	}
-	return ok("SSH 命令执行成功", data, "ssh_exec")
+	return execOutcome{exitCode: 0, result: ok("SSH 命令执行成功", data, "ssh_exec")}
 }
 
 // shellSingleQuote 做安全的 shell 单引号转义。
+// execCommands 在同一个连接上顺序执行多条命令。
+// 相比调用方循环发起 N 次 exec，这里只建一次远端会话，
+// 既省掉往返开销，也保证了命令间的顺序与同机上下文一致。
+func (m *Manager) execCommands(ctx context.Context, req Request, base sshExecRequest, raw any) Result {
+	commands, err := toCommandList(raw)
+	if err != nil {
+		return invalid(err.Error())
+	}
+	if len(commands) == 0 {
+		return invalid("commands 不能为空")
+	}
+	if len(commands) > sshMaxBatch {
+		return invalid(fmt.Sprintf("commands 最多 %d 条", sshMaxBatch))
+	}
+	for i, command := range commands {
+		if strings.TrimSpace(command) == "" {
+			return invalid(fmt.Sprintf("commands[%d] 不能为空", i))
+		}
+		if len(command) > sshMaxCommandBytes {
+			return invalid(fmt.Sprintf("commands[%d] 超过 %d 字节上限", i, sshMaxCommandBytes))
+		}
+	}
+
+	sessionID, _ := execSessionID(req.Args)
+	// 有 sessionId 就复用，否则新建一次性连接。
+	session, cleanup, err := m.execSession(ctx, req, sessionID)
+	if err != nil {
+		return fail("SSH_CONNECT_FAILED", err.Error(), nil, "SSH_CONNECT_FAILED")
+	}
+	defer cleanup()
+
+	started := time.Now()
+	results := make([]map[string]any, 0, len(commands))
+	failed := 0
+	for i, command := range commands {
+		spec := base
+		spec.command = command
+		outcome := m.runOnSession(ctx, session, spec)
+		item := resultData(outcome.result)
+		if item == nil {
+			item = map[string]any{"error": outcome.result.Message}
+		}
+		item["index"] = i
+		item["command"] = command
+		results = append(results, item)
+		if outcome.exitCode != 0 {
+			failed++
+		}
+	}
+
+	data := map[string]any{
+		"host":       session.host,
+		"port":       session.port,
+		"user":       session.user,
+		"sessionId":  session.id,
+		"count":      len(commands),
+		"failed":     failed,
+		"results":    results,
+		"durationMs": time.Since(started).Milliseconds(),
+	}
+	if failed > 0 {
+		return withData(fail("SSH_COMMAND_FAILED", fmt.Sprintf("批量执行完成，%d/%d 条命令失败", failed, len(commands)), nil, "ssh_exec_commands"), data)
+	}
+	return ok(fmt.Sprintf("批量执行完成，共 %d 条命令", len(commands)), data, "ssh_exec_commands")
+}
+
+// execTargets 让多个会话并行执行同一条命令。
+// 典型用途：一批服务器同时跑 uptime / 拉日志。
+func (m *Manager) execTargets(ctx context.Context, base sshExecRequest, raw any) Result {
+	targets, err := toCommandList(raw)
+	if err != nil {
+		return invalid("targets 必须是 sessionId 数组：" + err.Error())
+	}
+	if len(targets) == 0 {
+		return invalid("targets 不能为空")
+	}
+	if len(targets) > sshMaxBatch {
+		return invalid(fmt.Sprintf("targets 最多 %d 个", sshMaxBatch))
+	}
+	if strings.TrimSpace(base.command) == "" {
+		return invalid("targets 形态必须提供 command")
+	}
+	if len(base.command) > sshMaxCommandBytes {
+		return invalid(fmt.Sprintf("command 超过 %d 字节上限", sshMaxCommandBytes))
+	}
+	return m.fanOut(ctx, base, targets, nil)
+}
+
+// execJobs 让每个会话跑各自的命令（jobs:[{sessionId,command}...]）。
+func (m *Manager) execJobs(ctx context.Context, base sshExecRequest, raw any) Result {
+	jobs, err := toJobList(raw)
+	if err != nil {
+		return invalid(err.Error())
+	}
+	if len(jobs) == 0 {
+		return invalid("jobs 不能为空")
+	}
+	if len(jobs) > sshMaxBatch {
+		return invalid(fmt.Sprintf("jobs 最多 %d 条", sshMaxBatch))
+	}
+	targets := make([]string, 0, len(jobs))
+	commands := make([]string, 0, len(jobs))
+	for i, job := range jobs {
+		if job.SessionID == "" {
+			return invalid(fmt.Sprintf("jobs[%d] 缺少 sessionId", i))
+		}
+		if strings.TrimSpace(job.Command) == "" {
+			return invalid(fmt.Sprintf("jobs[%d] 缺少 command", i))
+		}
+		if len(job.Command) > sshMaxCommandBytes {
+			return invalid(fmt.Sprintf("jobs[%d] command 超过 %d 字节上限", i, sshMaxCommandBytes))
+		}
+		targets = append(targets, job.SessionID)
+		commands = append(commands, job.Command)
+	}
+	return m.fanOut(ctx, base, targets, commands)
+}
+
+// fanOut 在多个会话上并发执行；commands 为 nil 时所有目标共用 base.command。
+// 并发上限 sshBatchConcurrency，与服务端 totalTasks 对齐，避免打爆任务槽。
+func (m *Manager) fanOut(ctx context.Context, base sshExecRequest, targets []string, commands []string) Result {
+	type slotResult struct {
+		index int
+		data  map[string]any
+	}
+	started := time.Now()
+	// results 每个 goroutine 只写自己的索引，索引互不重叠，无需额外加锁。
+	results := make([]map[string]any, len(targets))
+
+	sem := make(chan struct{}, sshBatchConcurrency)
+	var wg sync.WaitGroup
+	for i, target := range targets {
+		wg.Add(1)
+		go func(idx int, sessionID string) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			item := map[string]any{"sessionId": sessionID, "index": idx}
+			session, found := m.sshState().get(sessionID)
+			if !found {
+				item["error"] = "SSH 会话不存在：" + sessionID
+				results[idx] = item
+				return
+			}
+			spec := base
+			if commands != nil {
+				spec.command = commands[idx]
+			}
+			outcome := m.runOnSession(ctx, session, spec)
+			inner := resultData(outcome.result)
+			if inner == nil {
+				inner = map[string]any{"error": outcome.result.Message}
+			}
+			for key, value := range inner {
+				item[key] = value
+			}
+			item["index"] = idx
+			item["sessionId"] = sessionID
+			results[idx] = item
+		}(i, target)
+	}
+	wg.Wait()
+
+	failed := 0
+	for _, item := range results {
+		if item == nil {
+			failed++
+			continue
+		}
+		if _, bad := item["error"]; bad {
+			failed++
+			continue
+		}
+		if code, ok := item["exitCode"].(int); ok && code != 0 {
+			failed++
+		}
+	}
+
+	data := map[string]any{
+		"count":       len(targets),
+		"failed":      failed,
+		"results":     results,
+		"durationMs":  time.Since(started).Milliseconds(),
+		"concurrency": sshBatchConcurrency,
+	}
+	if failed > 0 {
+		return withData(fail("SSH_COMMAND_FAILED", fmt.Sprintf("扇出执行完成，%d/%d 个目标失败", failed, len(targets)), nil, "ssh_exec_fanout"), data)
+	}
+	return ok(fmt.Sprintf("扇出执行完成，共 %d 个目标", len(targets)), data, "ssh_exec_fanout")
+}
+
+// execSession 取出 exec 要用的会话：有 sessionId 就复用，否则新建一次性连接。
+// 返回的 cleanup 在新建连接时需要调用（关闭会话），复用时为空操作。
+func (m *Manager) execSession(ctx context.Context, req Request, sessionID string) (*sshSession, func(), error) {
+	if sessionID != "" {
+		session, found := m.sshState().get(sessionID)
+		if !found {
+			return nil, nil, fmt.Errorf("SSH 会话不存在：%s", sessionID)
+		}
+		return session, func() {}, nil
+	}
+	conn, err := parseSSHArgs(req.Args, m.cfg.WorkDir)
+	if err != nil {
+		return nil, nil, err
+	}
+	session, err := m.dialSSH(ctx, conn)
+	if err != nil {
+		return nil, nil, err
+	}
+	// 一次性连接：用完关闭并从池中移除，否则僵尸条目会占用名额。
+	return session, func() {
+		session.shutdown()
+		m.sshState().remove(session.id)
+	}, nil
+}
+
+// sshJob 是 jobs 形态里的一项。
+type sshJob struct {
+	SessionID string
+	Command   string
+}
+
+// toCommandList 把任意形态的字符串数组参数规整成 []string。
+func toCommandList(raw any) ([]string, error) {
+	switch typed := raw.(type) {
+	case []string:
+		return append([]string(nil), typed...), nil
+	case []any:
+		out := make([]string, 0, len(typed))
+		for i, item := range typed {
+			text, ok := item.(string)
+			if !ok {
+				return nil, fmt.Errorf("第 %d 项必须是字符串", i)
+			}
+			out = append(out, text)
+		}
+		return out, nil
+	case string:
+		if strings.TrimSpace(typed) == "" {
+			return nil, nil
+		}
+		return []string{typed}, nil
+	default:
+		return nil, fmt.Errorf("必须是字符串数组")
+	}
+}
+
+// toJobList 解析 jobs 形态。
+func toJobList(raw any) ([]sshJob, error) {
+	list, ok := raw.([]any)
+	if !ok {
+		if typed, ok2 := raw.([]map[string]any); ok2 {
+			out := make([]sshJob, 0, len(typed))
+			for _, item := range typed {
+				out = append(out, sshJob{SessionID: stringOf(item["sessionId"]), Command: stringOf(item["command"])})
+			}
+			return out, nil
+		}
+		return nil, fmt.Errorf("jobs 必须是对象数组")
+	}
+	out := make([]sshJob, 0, len(list))
+	for i, item := range list {
+		obj, ok := item.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("jobs[%d] 必须是对象", i)
+		}
+		job := sshJob{SessionID: stringOf(obj["sessionId"]), Command: stringOf(obj["command"])}
+		if job.SessionID == "" {
+			job.SessionID = stringOf(obj["session"])
+		}
+		out = append(out, job)
+	}
+	return out, nil
+}
+
+func stringOf(value any) string {
+	text, _ := value.(string)
+	return strings.TrimSpace(text)
+}
+
+// resultData 取出 Result.Data 里的 map，供批量结果聚合。
+func resultData(r Result) map[string]any {
+	if r.Data == nil {
+		return nil
+	}
+	if typed, ok := r.Data.(map[string]any); ok {
+		return typed
+	}
+	return nil
+}
+
 func shellSingleQuote(value string) string {
 	return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
 }

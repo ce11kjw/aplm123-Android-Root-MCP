@@ -205,7 +205,7 @@ var toolParameters = map[string][]string{
 	"aplm_diagnostics":     {"path", "output", "background"},
 	"aplm_schedule":        {"id", "scheduleId", "name", "type", "tool", "targetTool", "targetArgs", "command", "enabled", "retryCount", "retries", "retryDelaySeconds", "at", "everySeconds", "intervalSeconds", "time", "weekday", "cron", "expression"},
 	"aplm_backup":          {"type", "sources", "paths", "path", "destination", "output", "sha256", "backup", "confirmDangerous", "overwrite", "background"},
-	"aplm_ssh":             {"host", "port", "user", "password", "privateKey", "passphrase", "keyFile", "knownHosts", "insecure", "command", "cmd", "stdin", "env", "cwd", "target", "sessionId", "keep", "localPath", "remotePath", "remote", "src", "dest", "bindPort", "bindAddr", "targetHost", "targetPort", "forwardId", "forward", "all", "timeoutMs", "timeout", "background"},
+	"aplm_ssh":             {"host", "port", "user", "password", "privateKey", "passphrase", "keyFile", "knownHosts", "insecure", "command", "cmd", "commands", "targets", "jobs", "stdin", "env", "cwd", "target", "sessionId", "keep", "localPath", "remotePath", "remote", "src", "dest", "bindPort", "bindAddr", "targetHost", "targetPort", "forwardId", "forward", "all", "timeoutMs", "timeout", "background"},
 	"aplm_clipboard":       {"text", "content", "value", "contains", "timeoutMs", "timeout"},
 	"aplm_ui":              {"selector", "text", "textContains", "contentDescription", "contentDesc", "resourceId", "id", "className", "class", "package", "packageName", "index", "clickable", "longPress", "durationMs", "limit", "maxResults", "maxSwipes", "direction", "swipePercent", "timeoutMs", "timeout"},
 	"aplm_share":           {"path", "file", "source", "url", "link", "package", "packageName", "to", "mime", "type", "text", "user", "userId"},
@@ -653,6 +653,31 @@ func parameterCatalog() map[string]any {
 		"forwardId":  stringValue("端口转发 ID。"),
 		"forward":    stringValue("forwardId 的兼容别名。"),
 		"all":        booleanValue("是否对全部对象生效，例如关闭所有 SSH 会话。"),
+		"commands": map[string]any{
+			"type":        "array",
+			"items":       map[string]any{"type": "string"},
+			"maxItems":    32,
+			"description": "多条远端命令，在同一个连接上顺序执行（exec 形态三）。",
+		},
+		"targets": map[string]any{
+			"type":        "array",
+			"items":       map[string]any{"type": "string"},
+			"maxItems":    32,
+			"description": "多个会话 ID，并行执行同一条 command（exec 形态四）。",
+		},
+		"jobs": map[string]any{
+			"type":        "array",
+			"maxItems":    32,
+			"description": "每个会话执行各自的命令，元素为 {sessionId, command}（exec 形态四）。",
+			"items": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"sessionId": stringValue("SSH 会话 ID。"),
+					"command":   stringValue("该会话要执行的命令。"),
+				},
+				"required": []string{"sessionId", "command"},
+			},
+		},
 		// --- aplm_ui / aplm_share / aplm_clipboard 专用参数 ---
 		"selector": map[string]any{
 			"type":                 "object",

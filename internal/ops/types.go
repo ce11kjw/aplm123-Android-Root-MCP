@@ -67,6 +67,8 @@ type Manager struct {
 	sshMu                sync.Mutex
 	ssh                  *sshRuntime
 	closeOnce            sync.Once
+	// closed 在 Close 时关闭，用于停止后台清扫协程。
+	closed chan struct{}
 }
 
 // New returns a self-contained operation manager. Existing user content is
@@ -94,12 +96,16 @@ func New(cfg Config) *Manager {
 		scheduleEvents:       make(chan scheduleEvent, 16),
 		scheduleEventCancels: make(map[string]context.CancelFunc),
 		scheduleEventErrors:  make(map[string]string),
+		closed:               make(chan struct{}),
 	}
 }
 
 // Close releases bounded network sessions owned by the manager.
 func (m *Manager) Close() {
 	m.closeOnce.Do(func() {
+		if m.closed != nil {
+			close(m.closed)
+		}
 		m.networkState().close()
 		// SSH 会话持有真实 TCP 连接与本地监听端口，必须显式回收。
 		m.sshMu.Lock()
