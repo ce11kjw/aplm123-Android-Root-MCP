@@ -64,6 +64,8 @@ type Manager struct {
 	scheduleEventErrors  map[string]string
 	networkOnce          sync.Once
 	network              *networkRuntime
+	sshMu                sync.Mutex
+	ssh                  *sshRuntime
 	closeOnce            sync.Once
 }
 
@@ -75,7 +77,7 @@ func New(cfg Config) *Manager {
 		cfg.WorkDir = defaultWorkDir()
 	}
 	if strings.TrimSpace(cfg.StateDir) == "" {
-		cfg.StateDir = filepath.Join(cfg.WorkDir, ".zcr521-state")
+		cfg.StateDir = filepath.Join(cfg.WorkDir, ".aplm123-state")
 	}
 	if cfg.ShellTimeout <= 0 {
 		cfg.ShellTimeout = 60 * time.Second
@@ -99,12 +101,17 @@ func New(cfg Config) *Manager {
 func (m *Manager) Close() {
 	m.closeOnce.Do(func() {
 		m.networkState().close()
+		// SSH 会话持有真实 TCP 连接与本地监听端口，必须显式回收。
+		m.sshMu.Lock()
+		runtime := m.ssh
+		m.sshMu.Unlock()
+		runtime.closeAll()
 	})
 }
 
 func defaultWorkDir() string {
 	if runtime.GOOS == "android" {
-		return "/storage/emulated/0/zcr521AI"
+		return "/storage/emulated/0/aplm123AI"
 	}
 	if wd, err := os.Getwd(); err == nil {
 		return wd

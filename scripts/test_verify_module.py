@@ -42,7 +42,7 @@ def main() -> None:
         "extra_text": "ZIP 仍含分散文本文件",
         "duplicate_entry": "ZIP 含重复条目",
     }
-    with tempfile.TemporaryDirectory(prefix="zcr521-module-negative-") as directory:
+    with tempfile.TemporaryDirectory(prefix="aplm123-module-negative-") as directory:
         root = pathlib.Path(directory)
         for mode, message in expected.items():
             candidate = root / f"{mode}.zip"

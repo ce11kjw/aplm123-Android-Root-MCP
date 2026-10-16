@@ -1,8 +1,8 @@
 #!/system/bin/sh
 
-ZCR_MODULE_ID="zcr521.android.mcp"
+ZCR_MODULE_ID="aplm123.root.mcp"
 ZCR_MODDIR="${ZCR_MODDIR:-${0%/*}}"
-ZCR_INTERNAL_DIR="/data/adb/zcr521-mcp"
+ZCR_INTERNAL_DIR="/data/adb/aplm123-mcp"
 ZCR_RUN_DIR="$ZCR_INTERNAL_DIR/run"
 ZCR_LOG_DIR="$ZCR_INTERNAL_DIR/logs"
 ZCR_PID_FILE="$ZCR_RUN_DIR/supervisor.pid"
@@ -10,17 +10,45 @@ ZCR_START_LOCK="$ZCR_RUN_DIR/start.lock"
 ZCR_MANUAL_STOP="$ZCR_INTERNAL_DIR/manual-stop"
 ZCR_CRASH_BLOCK="$ZCR_INTERNAL_DIR/crash-loop.blocked"
 ZCR_EFFECTIVE_ENV="$ZCR_RUN_DIR/effective.env"
-ZCR_WORK_DIR="/storage/emulated/0/zcr521AI"
-ZCR_DAEMON="$ZCR_MODDIR/bin/zcr521d"
+ZCR_WORK_DIR="/storage/emulated/0/aplm123AI"
+ZCR_DAEMON="$ZCR_MODDIR/bin/aplm123d"
 ZCR_7ZZ="$ZCR_MODDIR/bin/7zz"
 ZCR_DEFAULT_PORT="5322"
-ZCR_ADDRESS_FILE="/data/adb/zcr521-mcp/MCP地址.txt"
+ZCR_ADDRESS_FILE="/data/adb/aplm123-mcp/MCP地址.txt"
 
 PATH="/data/adb/magisk:/data/adb/ksu/bin:/data/adb/ap/bin:/system/bin:/system/xbin:/vendor/bin:$PATH"
 export PATH
 
 zcr_print() {
   printf '%s\n' "$*"
+}
+
+# 启动链路的落盘日志。
+#
+# 存在的原因：service.sh / post-fs-data.sh 由 root 管理器在开机时调用，
+# 它们的 stdout/stderr 通常被丢弃。一旦启动在早期失败（目录不可建、二进制
+# 不可执行、锁被占等），用户既看不到输出、也找不到 supervisor.log——
+# 因为那个文件只在守护进程成功起来之后才会有内容。
+#
+# 因此所有启动路径的成败都写到 boot.log，与 supervisor.log 同目录。
+zcr_boot_log() {
+  # 注意：ZCR_LOG_DIR 由 common.sh 顶部定义，此处必须复用同一个值，
+  # 不能改写它——否则调用方的路径约定会被破坏（早期版本踩过这个坑）。
+  zcr_log_dir="$ZCR_LOG_DIR"
+  zcr_log_file="$zcr_log_dir/boot.log"
+  mkdir -p "$zcr_log_dir" 2>/dev/null || return 0
+  # 超过 256 KiB 时轮转一次，避免无界增长
+  if [ -f "$zcr_log_file" ]; then
+    zcr_size="$(wc -c < "$zcr_log_file" 2>/dev/null)"
+    case "$zcr_size" in
+      ''|*[!0-9]*) ;;
+      *) [ "$zcr_size" -gt 262144 ] && mv -f "$zcr_log_file" "$zcr_log_file.1" 2>/dev/null ;;
+    esac
+  fi
+  printf '%s [%s] %s\n' \
+    "$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || printf 'unknown-time')" \
+    "${1:-info}" \
+    "${2:-}" >> "$zcr_log_file" 2>/dev/null || true
 }
 
 zcr_command_exists() {
@@ -177,7 +205,7 @@ zcr_pid_is_supervisor() {
 
   zcr_cmdline="$(tr '\000' ' ' < "/proc/$zcr_pid/cmdline" 2>/dev/null)"
   case "$zcr_cmdline" in
-    *zcr521d*supervisor*)
+    *aplm123d*supervisor*)
       return 0
       ;;
     *)
@@ -211,32 +239,51 @@ zcr_rotate_start_log() {
 
 zcr_start_supervisor() {
   zcr_mode="${1:-auto}"
+  zcr_boot_log "info" "=== 启动请求开始 mode=$zcr_mode ==="
+  zcr_boot_log "info" "MODDIR=$ZCR_MODDIR"
+  zcr_boot_log "info" "DAEMON=$ZCR_DAEMON"
+
   zcr_prepare_internal || {
     zcr_print "无法创建内部运行目录：$ZCR_INTERNAL_DIR"
+    zcr_boot_log "error" "无法创建内部运行目录：$ZCR_INTERNAL_DIR（检查 /data/adb 可写性与权限）"
     return 1
   }
   zcr_write_mcp_address >/dev/null 2>&1 || true
 
   if [ "$zcr_mode" = "force" ]; then
     rm -f "$ZCR_MANUAL_STOP" "$ZCR_CRASH_BLOCK"
+    zcr_boot_log "info" "force 模式：已清除 manual-stop 与 crash-loop.blocked"
   elif [ -e "$ZCR_MANUAL_STOP" ]; then
     zcr_print "服务已被用户手动停止，本次不开机启动"
+    zcr_boot_log "warn" "跳过启动：存在 manual-stop 标记（$ZCR_MANUAL_STOP）"
     return 0
   elif [ -e "$ZCR_CRASH_BLOCK" ]; then
     zcr_print "服务因连续崩溃被安全暂停，请从模块操作菜单手动启动"
+    zcr_boot_log "warn" "跳过启动：存在 crash-loop.blocked 标记（$ZCR_CRASH_BLOCK）"
     return 0
   fi
 
   [ -x "$ZCR_DAEMON" ] || {
     zcr_print "主程序不存在或不可执行：$ZCR_DAEMON"
+    zcr_boot_log "error" "主程序不存在或不可执行：$ZCR_DAEMON"
+    if [ -e "$ZCR_DAEMON" ]; then
+      zcr_boot_log "error" "  文件存在但不可执行，当前权限：$(ls -l "$ZCR_DAEMON" 2>/dev/null)"
+      zcr_boot_log "error" "  架构：$(head -c 20 "$ZCR_DAEMON" 2>/dev/null | od -An -tx1 2>/dev/null | tr -s ' ')"
+    else
+      zcr_boot_log "error" "  路径不存在，请确认模块 bin/ 目录完整"
+    fi
     return 1
   }
+
+  zcr_boot_log "info" "二进制检查通过：$(ls -l "$ZCR_DAEMON" 2>/dev/null)"
 
   zcr_old_pid="$(zcr_read_pid 2>/dev/null)"
   if [ -n "$zcr_old_pid" ] && zcr_pid_is_supervisor "$zcr_old_pid"; then
     zcr_print "服务已运行，PID=$zcr_old_pid"
+    zcr_boot_log "info" "跳过启动：已有 supervisor 在运行，PID=$zcr_old_pid"
     return 0
   fi
+  [ -n "$zcr_old_pid" ] && zcr_boot_log "warn" "PID 文件存在但进程已失效（PID=$zcr_old_pid），清理后继续"
   rm -f "$ZCR_PID_FILE"
 
   if ! mkdir "$ZCR_START_LOCK" 2>/dev/null; then
@@ -250,6 +297,7 @@ zcr_start_supervisor() {
       *)
         if kill -0 "$zcr_lock_owner" 2>/dev/null; then
           zcr_print "另一启动流程正在执行"
+          zcr_boot_log "warn" "跳过启动：启动锁被 PID=$zcr_lock_owner 持有"
           return 0
         fi
         ;;
@@ -257,9 +305,13 @@ zcr_start_supervisor() {
     rm -f "$ZCR_START_LOCK/owner" 2>/dev/null || true
     rmdir "$ZCR_START_LOCK" 2>/dev/null || {
       zcr_print "无法取得启动锁"
+      zcr_boot_log "error" "无法取得启动锁：残留目录 $ZCR_START_LOCK 无法清除"
       return 1
     }
-    mkdir "$ZCR_START_LOCK" 2>/dev/null || return 1
+    mkdir "$ZCR_START_LOCK" 2>/dev/null || {
+      zcr_boot_log "error" "无法创建启动锁目录：$ZCR_START_LOCK"
+      return 1
+    }
   fi
 
   printf '%s\n' "$$" > "$ZCR_START_LOCK/owner"
@@ -267,11 +319,11 @@ zcr_start_supervisor() {
 
   zcr_rotate_start_log
   zcr_framework="$(zcr_detect_framework)"
-  export ZCR521_MODULE_DIR="$ZCR_MODDIR"
-  export ZCR521_STATE_DIR="$ZCR_INTERNAL_DIR"
-  export ZCR521_WORK_DIR="$ZCR_WORK_DIR"
-  export ZCR521_ROOT_FRAMEWORK="$zcr_framework"
-  export ZCR521_7ZZ="$ZCR_7ZZ"
+  export aplm123_MODULE_DIR="$ZCR_MODDIR"
+  export aplm123_STATE_DIR="$ZCR_INTERNAL_DIR"
+  export aplm123_WORK_DIR="$ZCR_WORK_DIR"
+  export aplm123_ROOT_FRAMEWORK="$zcr_framework"
+  export aplm123_7ZZ="$ZCR_7ZZ"
 
   if zcr_command_exists nohup; then
     nohup "$ZCR_DAEMON" supervisor \
@@ -281,13 +333,36 @@ zcr_start_supervisor() {
       >> "$ZCR_LOG_DIR/supervisor.log" 2>&1 < /dev/null &
   fi
   zcr_new_pid=$!
+  zcr_boot_log "info" "已拉起 supervisor，PID=$zcr_new_pid（输出重定向到 supervisor.log）"
+
   zcr_write_pid "$zcr_new_pid" || {
+    zcr_boot_log "error" "写入 PID 文件失败：$ZCR_PID_FILE"
     if zcr_pid_is_supervisor "$zcr_new_pid"; then
       kill -TERM "$zcr_new_pid" 2>/dev/null || true
     fi
     return 1
   }
 
+  # 短暂等待后核验进程是否真的活下来了。
+  # 守护进程启动即退（例如早期的哈希校验失败）时，这里能捕获到并记录退出原因。
+  zcr_wait=0
+  while [ "$zcr_wait" -lt 3 ]; do
+    if ! zcr_pid_is_supervisor "$zcr_new_pid"; then
+      zcr_boot_log "error" "supervisor 启动后立即退出（PID=$zcr_new_pid），等待 ${zcr_wait}s 后已不存在"
+      if [ -s "$ZCR_LOG_DIR/supervisor.log" ]; then
+        zcr_boot_log "error" "  supervisor.log 尾部：$(tail -n 5 "$ZCR_LOG_DIR/supervisor.log" 2>/dev/null | tr '\n' '|')"
+      else
+        zcr_boot_log "error" "  supervisor.log 为空或不存在——说明进程在写日志前就退出了"
+        zcr_boot_log "error" "  可直接运行排查：$ZCR_DAEMON start-diagnose"
+      fi
+      rm -f "$ZCR_PID_FILE"
+      return 1
+    fi
+    sleep 1
+    zcr_wait=$((zcr_wait + 1))
+  done
+
+  zcr_boot_log "info" "supervisor 存活确认通过（PID=$zcr_new_pid）"
   zcr_print "服务启动请求已提交，PID=$zcr_new_pid"
   return 0
 }

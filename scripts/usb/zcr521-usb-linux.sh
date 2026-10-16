@@ -20,6 +20,6 @@ fi
 
 adb forward "tcp:${port}" "tcp:${port}"
 printf '%s\n' \
-  "ZCR521 USB 转发已就绪。" \
+  "aplm123 USB 转发已就绪。" \
   "MCP 地址: http://127.0.0.1:${port}/mcp" \
-  "仅支持 STDIO 的客户端请启动: zcr521-bridge --url http://127.0.0.1:${port}/mcp"
+  "仅支持 STDIO 的客户端请启动: aplm123-bridge --url http://127.0.0.1:${port}/mcp"

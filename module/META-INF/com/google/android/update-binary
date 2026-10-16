@@ -17,7 +17,7 @@ ui_print() {
 }
 
 zcr_require_manager_installer() {
-  ui_print "ZCR521 需要 Magisk 20.4+、KernelSU 或 APatch 的模块安装器"
+  ui_print "aplm123 需要 Magisk 20.4+、KernelSU 或 APatch 的模块安装器"
   exit 1
 }
 

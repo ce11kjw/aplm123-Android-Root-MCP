@@ -13,7 +13,7 @@ func TestOwnedSourcesAreValidUTF8WithoutKnownMojibake(t *testing.T) {
 	roots := []string{
 		".",
 		filepath.Join("..", "webui"),
-		filepath.Join("..", "..", "cmd", "zcr521-bridge"),
+		filepath.Join("..", "..", "cmd", "aplm123-bridge"),
 		filepath.Join("..", "..", "scripts", "usb"),
 	}
 	extensions := map[string]bool{

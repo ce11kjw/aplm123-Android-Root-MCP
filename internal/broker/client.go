@@ -11,7 +11,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/model"
 )
 
 type Client struct {

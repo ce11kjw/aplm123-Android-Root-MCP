@@ -201,7 +201,7 @@ func downloadAttempt(parent context.Context, rawURL, path string, headers map[st
 	if err != nil {
 		return offset, 0, sanitizeNetworkError(err, rawURL)
 	}
-	request.Header.Set("User-Agent", "ZCR521-Android-AI-MCP/1")
+	request.Header.Set("User-Agent", "aplm123-Android-Root-MCP/1")
 	for key, value := range headers {
 		request.Header.Set(key, value)
 	}
@@ -480,7 +480,7 @@ func (m *Manager) exportOperation(req Request) Result {
 		return fileFailure("导出路径读取失败", err, "stream_export")
 	}
 	if info.IsDir() {
-		return fail("INVALID_ARGUMENT", "目录必须先通过 zcr521_archive 压缩后再导出", errors.New("directory export requires archive"), "stream_export")
+		return fail("INVALID_ARGUMENT", "目录必须先通过 aplm_archive 压缩后再导出", errors.New("directory export requires archive"), "stream_export")
 	}
 	digest, err := hashFileSHA256(path)
 	if err != nil {

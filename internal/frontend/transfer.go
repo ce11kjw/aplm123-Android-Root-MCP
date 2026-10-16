@@ -19,7 +19,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/zcr521/android-ai-mcp/internal/atomicfile"
+	"github.com/aplm123/android-ai-mcp/internal/atomicfile"
 )
 
 const transferIDBytes = 16

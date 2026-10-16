@@ -5,56 +5,56 @@ package ops
 // implementation retain backwards-compatible aliases without leaking them
 // into the public contract.
 var publicActionAliases = map[string]map[string]string{
-	"zcr521_app_list": {
+	"aplm_app_list": {
 		"list": "all",
 	},
-	"zcr521_app_info": {
+	"aplm_app_info": {
 		"get": "info",
 	},
-	"zcr521_app_manage": {
+	"aplm_app_manage": {
 		"launch": "start",
 	},
-	"zcr521_root_info": {
+	"aplm_root_info": {
 		"detect":       "get",
 		"capabilities": "get",
 		"self_test":    "check",
 	},
-	"zcr521_root_module": {
+	"aplm_root_module": {
 		"remove": "delete",
 		"logs":   "log",
 	},
-	"zcr521_systemless": {
+	"aplm_systemless": {
 		"apply": "stage",
 	},
-	"zcr521_property": {
+	"aplm_property": {
 		"reset": "delete",
 	},
-	"zcr521_audio": {
+	"aplm_audio": {
 		"volume": "set_volume",
 	},
-	"zcr521_connectivity": {
+	"aplm_connectivity": {
 		"get":           "status",
 		"airplane_mode": "airplane",
 	},
-	"zcr521_input_method": {
+	"aplm_input_method": {
 		"get": "current",
 	},
-	"zcr521_accessibility": {
+	"aplm_accessibility": {
 		"list": "get",
 	},
-	"zcr521_network": {
+	"aplm_network": {
 		"ports":        "port_check",
 		"wifi":         "wifi_info",
 		"connectivity": "internet_test",
 	},
-	"zcr521_log": {
+	"aplm_log": {
 		"mcp": "service",
 	},
-	"zcr521_diagnostics": {
+	"aplm_diagnostics": {
 		"self_test": "check",
 		"collect":   "report",
 	},
-	"zcr521_backup": {
+	"aplm_backup": {
 		"remove": "delete",
 	},
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/zcr521/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/model"
 )
 
 func TestToolResultAvoidsCurrentProtocolDuplication(t *testing.T) {

@@ -17,13 +17,13 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/zcr521/android-ai-mcp/internal/broker"
-	"github.com/zcr521/android-ai-mcp/internal/buildinfo"
-	"github.com/zcr521/android-ai-mcp/internal/config"
-	"github.com/zcr521/android-ai-mcp/internal/frontend"
-	"github.com/zcr521/android-ai-mcp/internal/mcpapi"
-	"github.com/zcr521/android-ai-mcp/internal/model"
-	"github.com/zcr521/android-ai-mcp/internal/service"
+	"github.com/aplm123/android-ai-mcp/internal/broker"
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
+	"github.com/aplm123/android-ai-mcp/internal/config"
+	"github.com/aplm123/android-ai-mcp/internal/frontend"
+	"github.com/aplm123/android-ai-mcp/internal/mcpapi"
+	"github.com/aplm123/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/service"
 )
 
 func TestEndToEndBrokerMCPTasksAndTransfer(t *testing.T) {
@@ -114,7 +114,7 @@ func TestEndToEndBrokerMCPTasksAndTransfer(t *testing.T) {
 	httpServer := httptest.NewServer(public)
 	defer httpServer.Close()
 
-	client := mcp.NewClient(&mcp.Implementation{Name: "zcr521-e2e", Version: "1"}, nil)
+	client := mcp.NewClient(&mcp.Implementation{Name: "aplm123-e2e", Version: "1"}, nil)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{Endpoint: httpServer.URL + "/mcp"}, nil)
@@ -129,11 +129,11 @@ func TestEndToEndBrokerMCPTasksAndTransfer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(toolList.Tools) != 49 {
+	if len(toolList.Tools) != 53 {
 		t.Fatalf("tools/list returned %d tools", len(toolList.Tools))
 	}
 	writeResult, err := session.CallTool(ctx, &mcp.CallToolParams{
-		Name: "zcr521_fs_write",
+		Name: "aplm_fs_write",
 		Arguments: map[string]any{
 			"action":  "create",
 			"path":    "e2e/hello.txt",
@@ -144,7 +144,7 @@ func TestEndToEndBrokerMCPTasksAndTransfer(t *testing.T) {
 		t.Fatalf("write: err=%v result=%#v", err, writeResult)
 	}
 	readResult, err := session.CallTool(ctx, &mcp.CallToolParams{
-		Name: "zcr521_fs_read",
+		Name: "aplm_fs_read",
 		Arguments: map[string]any{
 			"action": "text",
 			"path":   "e2e/hello.txt",
@@ -155,7 +155,7 @@ func TestEndToEndBrokerMCPTasksAndTransfer(t *testing.T) {
 		t.Fatalf("read: err=%v result=%s", err, textOf(readResult))
 	}
 	background, err := session.CallTool(ctx, &mcp.CallToolParams{
-		Name: "zcr521_archive",
+		Name: "aplm_archive",
 		Arguments: map[string]any{
 			"action":      "create",
 			"destination": "e2e/hello.zip",
@@ -185,7 +185,7 @@ func testTaskExtension(t *testing.T, baseURL string, session *mcp.ClientSession)
 		"id":      101,
 		"method":  "tools/call",
 		"params": map[string]any{
-			"name": "zcr521_archive",
+			"name": "aplm_archive",
 			"arguments": map[string]any{
 				"action":      "create",
 				"destination": "e2e/hello-task.zip",
@@ -196,7 +196,7 @@ func testTaskExtension(t *testing.T, baseURL string, session *mcp.ClientSession)
 			"_meta": taskMeta(true),
 		},
 	}
-	callResponse := taskHTTPCall(t, baseURL, callBody, "tools/call", "zcr521_archive")
+	callResponse := taskHTTPCall(t, baseURL, callBody, "tools/call", "aplm_archive")
 	if callResponse.StatusCode != http.StatusOK {
 		raw, _ := io.ReadAll(callResponse.Body)
 		_ = callResponse.Body.Close()
@@ -303,7 +303,7 @@ func taskMeta(withTasks bool) map[string]any {
 	return map[string]any{
 		"io.modelcontextprotocol/protocolVersion": buildinfo.ProtocolCurrent,
 		"io.modelcontextprotocol/clientInfo": map[string]any{
-			"name":    "zcr521-e2e",
+			"name":    "aplm123-e2e",
 			"version": "1",
 		},
 		"io.modelcontextprotocol/clientCapabilities": map[string]any{
@@ -411,7 +411,7 @@ func waitTask(t *testing.T, session *mcp.ClientSession, id string) {
 	deadline := time.Now().Add(5 * time.Second)
 	for {
 		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
-			Name: "zcr521_task",
+			Name: "aplm_task",
 			Arguments: map[string]any{
 				"action": "get",
 				"taskId": id,

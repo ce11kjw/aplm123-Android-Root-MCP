@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/atomicfile"
-	"github.com/zcr521/android-ai-mcp/internal/buildinfo"
+	"github.com/aplm123/android-ai-mcp/internal/atomicfile"
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
 )
 
 const SchemaVersion = 1
@@ -45,7 +45,12 @@ type Paths struct {
 }
 
 type Limits struct {
-	MaxConnections        int   `json:"maxConnections"`
+	MaxConnections int `json:"maxConnections"`
+	// MaxStreams 是流式连接（MCP / SSE）的独立配额。
+	// 与 maxConnections 分开，避免长期挂起的流把普通调用挤死。
+	MaxStreams int `json:"maxStreams"`
+	// StreamIdleTTLSeconds 是流连接的空闲判定阈值（秒）。
+	StreamIdleTTLSeconds  int   `json:"streamIdleTtlSeconds"`
 	MaxRequestBytes       int64 `json:"maxRequestBytes"`
 	TotalTasks            int   `json:"totalTasks"`
 	HeavyTasks            int   `json:"heavyTasks"`
@@ -97,6 +102,8 @@ func Default() Config {
 		},
 		Limits: Limits{
 			MaxConnections:        32,
+			MaxStreams:            64,
+			StreamIdleTTLSeconds:  600,
 			MaxRequestBytes:       8 << 20,
 			TotalTasks:            8,
 			HeavyTasks:            2,
@@ -148,6 +155,12 @@ func (c Config) Validate() error {
 	}
 	if c.Limits.TotalTasks < 1 || c.Limits.TotalTasks > 128 {
 		problems = append(problems, "limits.totalTasks 必须在 1..128")
+	}
+	if c.Limits.MaxStreams < 1 || c.Limits.MaxStreams > 1024 {
+		problems = append(problems, "limits.maxStreams 必须在 1..1024")
+	}
+	if c.Limits.StreamIdleTTLSeconds < 30 || c.Limits.StreamIdleTTLSeconds > 86400 {
+		problems = append(problems, "limits.streamIdleTtlSeconds 必须在 30..86400")
 	}
 	if c.Limits.HeavyTasks < 1 || c.Limits.HeavyTasks > c.Limits.TotalTasks {
 		problems = append(problems, "limits.heavyTasks 必须在 1..totalTasks")

@@ -33,7 +33,7 @@ if [ "$SKIP_TESTS" != "1" ]; then
   "$GO_BIN" test -race ./...
 fi
 "$GO_BIN" mod vendor
-"$GO_BIN" run -mod=vendor ./cmd/zcr521d schema --output "$ROOT/schemas/tools.json"
+"$GO_BIN" run -mod=vendor ./cmd/aplm123d schema --output "$ROOT/schemas/tools.json"
 
 COMMIT=unknown
 if command -v git >/dev/null 2>&1 && git rev-parse --verify HEAD >/dev/null 2>&1; then
@@ -41,7 +41,7 @@ if command -v git >/dev/null 2>&1 && git rev-parse --verify HEAD >/dev/null 2>&1
 fi
 BUILD_TIME=$("$PYTHON" -c 'import datetime,os; print(datetime.datetime.fromtimestamp(int(os.environ["SOURCE_DATE_EPOCH"]),datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))')
 MODULE_PROP_SHA256=$("$PYTHON" -c 'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' "$ROOT/module/module.prop")
-LD_COMMON="-s -w -buildid= -X github.com/zcr521/android-ai-mcp/internal/buildinfo.Version=$VERSION -X github.com/zcr521/android-ai-mcp/internal/buildinfo.Commit=$COMMIT -X github.com/zcr521/android-ai-mcp/internal/buildinfo.BuildTime=$BUILD_TIME -X github.com/zcr521/android-ai-mcp/internal/buildinfo.ModulePropSHA256=$MODULE_PROP_SHA256"
+LD_COMMON="-s -w -buildid= -X github.com/aplm123/android-ai-mcp/internal/buildinfo.Version=$VERSION -X github.com/aplm123/android-ai-mcp/internal/buildinfo.Commit=$COMMIT -X github.com/aplm123/android-ai-mcp/internal/buildinfo.BuildTime=$BUILD_TIME -X github.com/aplm123/android-ai-mcp/internal/buildinfo.ModulePropSHA256=$MODULE_PROP_SHA256"
 
 case "$(uname -s)" in
   Darwin) HOST_TAG=darwin-x86_64 ;;
@@ -60,15 +60,15 @@ build_android() {
   GOOS=android GOARCH="$arch" GOARM="$goarm" CGO_ENABLED=1 CC="$TOOLCHAIN/$cc" \
     "$GO_BIN" build -mod=vendor -trimpath -buildmode=pie -tags osusergo,netgo \
     -ldflags "$LD_COMMON -linkmode external -extldflags=-Wl,-z,max-page-size=16384" \
-    -o "build/android/$abi/zcr521d" ./cmd/zcr521d
+    -o "build/android/$abi/aplm123d" ./cmd/aplm123d
 }
 build_android arm64-v8a arm64 aarch64-linux-android26-clang
 build_android armeabi-v7a arm armv7a-linux-androideabi26-clang 7
 build_android x86_64 amd64 x86_64-linux-android26-clang
 
-"$PYTHON" scripts/verify_elf.py --file build/android/arm64-v8a/zcr521d --machine 183 --page-size 16384 --api 26
-"$PYTHON" scripts/verify_elf.py --file build/android/armeabi-v7a/zcr521d --machine 40 --page-size 16384 --api 26
-"$PYTHON" scripts/verify_elf.py --file build/android/x86_64/zcr521d --machine 62 --page-size 16384 --api 26
+"$PYTHON" scripts/verify_elf.py --file build/android/arm64-v8a/aplm123d --machine 183 --page-size 16384 --api 26
+"$PYTHON" scripts/verify_elf.py --file build/android/armeabi-v7a/aplm123d --machine 40 --page-size 16384 --api 26
+"$PYTHON" scripts/verify_elf.py --file build/android/x86_64/aplm123d --machine 62 --page-size 16384 --api 26
 
 if [ "$SKIP_7ZIP" != "1" ]; then
   ANDROID_NDK_HOME="$NDK" ANDROID_API_LEVEL=26 \
@@ -81,9 +81,9 @@ cp -R module build/module
 "$PYTHON" "$ROOT/scripts/generate_notice.py" --repo "$ROOT" --license "$ROOT/build/module/LICENSE" --output "$ROOT/build/module/NOTICE"
 for abi in arm64-v8a armeabi-v7a x86_64; do
   mkdir -p "build/module/bin/$abi"
-  cp "build/android/$abi/zcr521d" "build/module/bin/$abi/zcr521d"
+  cp "build/android/$abi/aplm123d" "build/module/bin/$abi/aplm123d"
   cp "third_party/7zip/out/$abi/7zz" "build/module/bin/$abi/7zz"
 done
 
 "$PYTHON" scripts/package.py --module-stage "$ROOT/build/module" --dist "$ROOT/dist" --version "$VERSION" --epoch "$SOURCE_DATE_EPOCH"
-"$PYTHON" scripts/verify_module.py "$ROOT/dist/ZCR521-Android-AI-MCP-v$VERSION-universal.zip"
+"$PYTHON" scripts/verify_module.py "$ROOT/dist/aplm123-Android-Root-MCP-v$VERSION-universal.zip"

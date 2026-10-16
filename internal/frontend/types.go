@@ -1,4 +1,4 @@
-// Package frontend exposes the network-facing HTTP surface of ZCR521.
+// Package frontend exposes the network-facing HTTP surface of aplm123.
 //
 // The package deliberately depends on interfaces instead of the privileged
 // implementation. This keeps parsing and network policy in the unprivileged
@@ -74,6 +74,11 @@ type Options struct {
 	MaxUploadBytes     int64
 	TransferChunkBytes int64
 	MaxConcurrent      int
-	UploadTTL          time.Duration
-	ArtifactTTL        time.Duration
+	// MaxStreams 限制同时挂起的流式连接数（MCP / SSE）。
+	// 与 MaxConcurrent 分开计数，避免长连接挤占普通工具调用的配额。
+	MaxStreams int
+	// StreamIdleTimeout 是流连接的空闲回收阈值，用于 WebUI 展示与剪枝。
+	StreamIdleTimeout time.Duration
+	UploadTTL         time.Duration
+	ArtifactTTL       time.Duration
 }

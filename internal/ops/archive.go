@@ -893,7 +893,7 @@ func (m *Manager) external7z(ctx context.Context, action, archive string, source
 
 func find7Zip() (string, error) {
 	var configuredErr error
-	if configured := strings.TrimSpace(os.Getenv("ZCR521_7ZZ")); configured != "" {
+	if configured := strings.TrimSpace(os.Getenv("aplm123_7ZZ")); configured != "" {
 		info, err := os.Stat(configured)
 		if err == nil && info.Mode().IsRegular() && info.Size() > 0 {
 			executable := info.Mode().Perm()&0o111 != 0
@@ -906,11 +906,11 @@ func find7Zip() (string, error) {
 			if executable {
 				return filepath.Clean(configured), nil
 			}
-			configuredErr = fmt.Errorf("ZCR521_7ZZ 不是可执行文件: %s", configured)
+			configuredErr = fmt.Errorf("aplm123_7ZZ 不是可执行文件: %s", configured)
 		} else if err != nil {
-			configuredErr = fmt.Errorf("ZCR521_7ZZ 不可用: %w", err)
+			configuredErr = fmt.Errorf("aplm123_7ZZ 不可用: %w", err)
 		} else {
-			configuredErr = fmt.Errorf("ZCR521_7ZZ 必须是非空普通文件: %s", configured)
+			configuredErr = fmt.Errorf("aplm123_7ZZ 必须是非空普通文件: %s", configured)
 		}
 	}
 	for _, candidate := range []string{"7zz", "7z", "7za"} {

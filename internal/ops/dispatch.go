@@ -11,55 +11,59 @@ import (
 )
 
 var publicTools = []string{
-	"zcr521_status",
-	"zcr521_capabilities",
-	"zcr521_config",
-	"zcr521_fs_info",
-	"zcr521_fs_read",
-	"zcr521_fs_write",
-	"zcr521_fs_manage",
-	"zcr521_fs_search",
-	"zcr521_fs_hash",
-	"zcr521_archive",
-	"zcr521_download",
-	"zcr521_transfer_upload",
-	"zcr521_transfer_export",
-	"zcr521_shell",
-	"zcr521_script",
-	"zcr521_task",
-	"zcr521_skill",
-	"zcr521_app_list",
-	"zcr521_app_info",
-	"zcr521_app_install",
-	"zcr521_app_manage",
-	"zcr521_app_permission",
-	"zcr521_app_export",
-	"zcr521_root_info",
-	"zcr521_root_module",
-	"zcr521_systemless",
-	"zcr521_process",
-	"zcr521_service",
-	"zcr521_property",
-	"zcr521_setting",
-	"zcr521_display",
-	"zcr521_audio",
-	"zcr521_connectivity",
-	"zcr521_locale_time",
-	"zcr521_input_method",
-	"zcr521_app_policy",
-	"zcr521_default_app",
-	"zcr521_notification",
-	"zcr521_accessibility",
-	"zcr521_developer",
-	"zcr521_device_info",
-	"zcr521_power",
-	"zcr521_screen",
-	"zcr521_input",
-	"zcr521_network",
-	"zcr521_log",
-	"zcr521_diagnostics",
-	"zcr521_schedule",
-	"zcr521_backup",
+	"aplm_status",
+	"aplm_capabilities",
+	"aplm_config",
+	"aplm_fs_info",
+	"aplm_fs_read",
+	"aplm_fs_write",
+	"aplm_fs_manage",
+	"aplm_fs_search",
+	"aplm_fs_hash",
+	"aplm_archive",
+	"aplm_download",
+	"aplm_transfer_upload",
+	"aplm_transfer_export",
+	"aplm_shell",
+	"aplm_script",
+	"aplm_task",
+	"aplm_skill",
+	"aplm_app_list",
+	"aplm_app_info",
+	"aplm_app_install",
+	"aplm_app_manage",
+	"aplm_app_permission",
+	"aplm_app_export",
+	"aplm_root_info",
+	"aplm_root_module",
+	"aplm_systemless",
+	"aplm_process",
+	"aplm_service",
+	"aplm_property",
+	"aplm_setting",
+	"aplm_display",
+	"aplm_audio",
+	"aplm_connectivity",
+	"aplm_locale_time",
+	"aplm_input_method",
+	"aplm_app_policy",
+	"aplm_default_app",
+	"aplm_notification",
+	"aplm_accessibility",
+	"aplm_developer",
+	"aplm_device_info",
+	"aplm_power",
+	"aplm_screen",
+	"aplm_input",
+	"aplm_network",
+	"aplm_log",
+	"aplm_diagnostics",
+	"aplm_schedule",
+	"aplm_backup",
+	"aplm_ssh",
+	"aplm_clipboard",
+	"aplm_ui",
+	"aplm_share",
 }
 
 // SupportedTools returns a copy of the stable public tool-name list.
@@ -69,72 +73,96 @@ func SupportedTools() []string {
 
 func (m *Manager) executeSync(ctx context.Context, req Request) Result {
 	switch req.Tool {
-	case "zcr521_status":
+	case "aplm_status":
 		return m.statusOperation(req)
-	case "zcr521_capabilities":
+	case "aplm_capabilities":
 		return m.capabilityOperation(req)
-	case "zcr521_config":
+	case "aplm_config":
 		return m.configOperation(req)
-	case "zcr521_fs_info":
+	case "aplm_fs_info":
 		return m.fsInfoOperation(req)
-	case "zcr521_fs_read":
+	case "aplm_fs_read":
 		return m.fsReadOperation(req)
-	case "zcr521_fs_write":
+	case "aplm_fs_write":
 		return m.fsWriteOperation(req)
-	case "zcr521_fs_manage":
+	case "aplm_fs_manage":
 		return m.fsManageOperation(req)
-	case "zcr521_fs_search":
+	case "aplm_fs_search":
 		return m.fsSearchOperation(req)
-	case "zcr521_fs_hash":
+	case "aplm_fs_hash":
 		return m.fsHashOperation(req)
-	case "zcr521_archive":
+	case "aplm_archive":
 		return m.archiveOperation(ctx, req)
-	case "zcr521_download":
+	case "aplm_download":
 		return m.downloadOperation(ctx, req)
-	case "zcr521_transfer_upload":
+	case "aplm_transfer_upload":
 		return m.uploadOperation(req)
-	case "zcr521_transfer_export":
+	case "aplm_transfer_export":
 		return m.exportOperation(req)
-	case "zcr521_shell":
+	case "aplm_shell":
 		return m.publicShellOperation(ctx, req)
-	case "zcr521_script":
+	case "aplm_script":
 		return m.publicScriptOperation(ctx, req)
-	case "zcr521_task":
+	case "aplm_task":
 		return m.publicTaskOperation(req)
-	case "zcr521_skill":
+	case "aplm_skill":
 		return unsupported("技能索引和执行记忆由 service 层提供")
-	case "zcr521_process":
+	case "aplm_process":
 		return m.processOperation(ctx, req)
-	case "zcr521_network":
+	case "aplm_network":
 		return m.networkOperation(ctx, req)
-	case "zcr521_app_list", "zcr521_app_info", "zcr521_app_install",
-		"zcr521_app_manage", "zcr521_app_permission", "zcr521_app_export":
+	case "aplm_app_list", "aplm_app_info", "aplm_app_install",
+		"aplm_app_manage", "aplm_app_permission", "aplm_app_export":
 		return m.appOperation(ctx, req)
-	case "zcr521_root_info", "zcr521_root_module", "zcr521_systemless":
+	case "aplm_root_info", "aplm_root_module", "aplm_systemless":
 		return m.rootOperation(ctx, req)
-	case "zcr521_service":
+	case "aplm_service":
 		return m.serviceOperation(ctx, req)
-	case "zcr521_property", "zcr521_setting", "zcr521_display", "zcr521_audio",
-		"zcr521_connectivity", "zcr521_locale_time", "zcr521_input_method",
-		"zcr521_app_policy", "zcr521_default_app", "zcr521_notification",
-		"zcr521_accessibility", "zcr521_developer":
+	case "aplm_property", "aplm_setting", "aplm_display", "aplm_audio",
+		"aplm_connectivity", "aplm_locale_time", "aplm_input_method",
+		"aplm_app_policy", "aplm_default_app", "aplm_notification",
+		"aplm_accessibility", "aplm_developer":
 		return m.systemOperation(ctx, req)
-	case "zcr521_device_info":
+	case "aplm_device_info":
 		return m.deviceOperation(ctx, req)
-	case "zcr521_power":
+	case "aplm_power":
 		return m.powerOperation(ctx, req)
-	case "zcr521_screen":
+	case "aplm_screen":
 		return m.screenOperation(ctx, req)
-	case "zcr521_input":
+	case "aplm_input":
 		return m.inputOperation(ctx, req)
-	case "zcr521_log":
+	case "aplm_log":
 		return m.logOperation(ctx, req)
-	case "zcr521_diagnostics":
+	case "aplm_diagnostics":
 		return m.diagnosticsOperation(ctx, req)
-	case "zcr521_schedule":
+	case "aplm_schedule":
 		return m.scheduleOperation(ctx, req)
-	case "zcr521_backup":
+	case "aplm_backup":
 		return m.backupOperation(ctx, req)
+	case "aplm_ssh":
+		action, actionErr := actionOf(req, "")
+		if actionErr != nil {
+			return invalidAction("aplm_ssh", "")
+		}
+		return m.sshOperation(ctx, req, action)
+	case "aplm_clipboard":
+		action, actionErr := actionOf(req, "")
+		if actionErr != nil {
+			return invalidAction("aplm_clipboard", "")
+		}
+		return m.clipboardOperation(ctx, req, action)
+	case "aplm_ui":
+		action, actionErr := actionOf(req, "")
+		if actionErr != nil {
+			return invalidAction("aplm_ui", "")
+		}
+		return m.uiOperation(ctx, req, action)
+	case "aplm_share":
+		action, actionErr := actionOf(req, "")
+		if actionErr != nil {
+			return invalidAction("aplm_share", "")
+		}
+		return m.shareOperation(ctx, req, action)
 	// Internal aliases are useful to unit-test the primitive operation layer.
 	case "shell_execute", "shell_exec", "execute_command", "command_run",
 		"shell_execute_many", "execute_commands", "shell_script", "script_execute", "script_run":

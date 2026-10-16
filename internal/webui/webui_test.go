@@ -18,7 +18,7 @@ func TestStatusPageIsSelfContainedReadOnlyAndWarns(t *testing.T) {
 	}
 	body := response.Body.String()
 	for _, required := range []string{
-		"ZCR521 AI MCP",
+		"aplm123 Root MCP",
 		"匿名 Root 局域网访问已启用",
 		`href="/assets/status.css"`,
 		`src="/assets/status.js"`,

@@ -171,29 +171,29 @@ func parseBracketGetprop(output string) map[string]string {
 
 func (m *Manager) systemOperation(ctx context.Context, req Request) Result {
 	switch req.Tool {
-	case "zcr521_property":
+	case "aplm_property":
 		return m.propertyOperation(ctx, req)
-	case "zcr521_setting":
+	case "aplm_setting":
 		return m.settingOperation(ctx, req)
-	case "zcr521_display":
+	case "aplm_display":
 		return m.displayOperation(ctx, req)
-	case "zcr521_audio":
+	case "aplm_audio":
 		return m.audioOperation(ctx, req)
-	case "zcr521_connectivity":
+	case "aplm_connectivity":
 		return m.connectivityOperation(ctx, req)
-	case "zcr521_locale_time":
+	case "aplm_locale_time":
 		return m.localeTimeOperation(ctx, req)
-	case "zcr521_input_method":
+	case "aplm_input_method":
 		return m.inputMethodOperation(ctx, req)
-	case "zcr521_app_policy":
+	case "aplm_app_policy":
 		return m.appPolicyOperation(ctx, req)
-	case "zcr521_default_app":
+	case "aplm_default_app":
 		return m.defaultAppOperation(ctx, req)
-	case "zcr521_notification":
+	case "aplm_notification":
 		return m.notificationOperation(ctx, req)
-	case "zcr521_accessibility":
+	case "aplm_accessibility":
 		return m.accessibilityOperation(ctx, req)
-	case "zcr521_developer":
+	case "aplm_developer":
 		return m.developerOperation(ctx, req)
 	default:
 		return fail("UNKNOWN_TOOL", "未知系统设置工具", errors.New(req.Tool), "dispatcher")

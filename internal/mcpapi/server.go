@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/zcr521/android-ai-mcp/internal/buildinfo"
-	"github.com/zcr521/android-ai-mcp/internal/model"
-	"github.com/zcr521/android-ai-mcp/internal/schema"
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
+	"github.com/aplm123/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/schema"
 )
 
 type Caller interface {
@@ -45,12 +45,12 @@ func New(caller Caller) (*API, error) {
 	// object is the complete capability declaration.
 	capabilities.AddExtension("io.modelcontextprotocol/tasks", nil)
 	server := mcp.NewServer(&mcp.Implementation{
-		Name:        "zcr521-android-mcp",
+		Name:        "aplm123-android-mcp",
 		Title:       buildinfo.Name,
 		Description: "Android Root 文件、Shell、应用、系统、网络、诊断与自动化工具。",
 		Version:     buildinfo.Version,
 	}, &mcp.ServerOptions{
-		Instructions: "这是完整 Root 能力服务。非平凡任务先用 zcr521_skill.match 匹配至多 3 条技能摘要，仅在摘要不足时用 get 加载最相关的 1 条正文，禁止一次加载全部技能；普通工具也会自动返回匹配提示。破坏性操作必须先确认目标；大文件使用 ResourceLink、分页或分块传输。",
+		Instructions: "这是完整 Root 能力服务。非平凡任务先用 aplm_skill.match 匹配至多 3 条技能摘要，仅在摘要不足时用 get 加载最相关的 1 条正文，禁止一次加载全部技能；普通工具也会自动返回匹配提示。破坏性操作必须先确认目标；大文件使用 ResourceLink、分页或分块传输。",
 		Capabilities: capabilities,
 	})
 	api := &API{server: server, caller: caller}
@@ -76,7 +76,7 @@ func (a *API) register(definition schema.Tool) {
 	readOnly := definition.Annotations.ReadOnly
 	idempotent := definition.Annotations.Idempotent
 	destructive := definition.Annotations.Destructive
-	openWorld := name == "zcr521_download" || name == "zcr521_network"
+	openWorld := name == "aplm_download" || name == "aplm_network"
 	a.server.AddTool(&mcp.Tool{
 		Name:         name,
 		Title:        definition.Title,
@@ -166,7 +166,7 @@ func toolResult(result model.Result, compact bool) *mcp.CallToolResult {
 			URI:         artifact.URI,
 			Name:        name,
 			Title:       name,
-			Description: "ZCR521 临时流式下载；过期后需重新导出。",
+			Description: "aplm123 临时流式下载；过期后需重新导出。",
 			MIMEType:    mediaType,
 			Size:        &size,
 		})

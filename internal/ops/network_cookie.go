@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/atomicfile"
+	"github.com/aplm123/android-ai-mcp/internal/atomicfile"
 	"golang.org/x/net/publicsuffix"
 )
 

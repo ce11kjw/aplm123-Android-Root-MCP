@@ -178,7 +178,7 @@ func (m *Manager) backupOperation(ctx context.Context, req Request) Result {
 		}
 		relative, relativeErr := filepath.Rel(backupRoot, path)
 		if relativeErr != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-			return fail("DANGEROUS_OPERATION", "zcr521_backup.delete 仅允许删除默认备份目录内的文件", errors.New(path), "backup_delete_guard")
+			return fail("DANGEROUS_OPERATION", "aplm_backup.delete 仅允许删除默认备份目录内的文件", errors.New(path), "backup_delete_guard")
 		}
 		if err := os.Remove(path); err != nil {
 			return fileFailure("备份删除失败", err, "backup_delete")

@@ -19,17 +19,17 @@ func (m *Manager) appOperation(ctx context.Context, req Request) Result {
 		return *result
 	}
 	switch req.Tool {
-	case "zcr521_app_list":
+	case "aplm_app_list":
 		return m.appList(ctx, req)
-	case "zcr521_app_info":
+	case "aplm_app_info":
 		return m.appInfo(ctx, req)
-	case "zcr521_app_install":
+	case "aplm_app_install":
 		return m.appInstall(ctx, req)
-	case "zcr521_app_manage":
+	case "aplm_app_manage":
 		return m.appManage(ctx, req)
-	case "zcr521_app_permission":
+	case "aplm_app_permission":
 		return m.appPermission(ctx, req)
-	case "zcr521_app_export":
+	case "aplm_app_export":
 		return m.appExport(ctx, req)
 	default:
 		return fail("UNKNOWN_TOOL", "未知应用工具", errors.New(req.Tool), "dispatcher")
@@ -442,7 +442,7 @@ func (m *Manager) appInstall(ctx context.Context, req Request) Result {
 		return result
 	}
 	if packageForVerify != "" {
-		verifyReq := Request{Tool: "zcr521_app_info", Args: map[string]any{"action": "path", "package": packageForVerify, "user": user}}
+		verifyReq := Request{Tool: "aplm_app_info", Args: map[string]any{"action": "path", "package": packageForVerify, "user": user}}
 		verify := m.appInfo(ctx, verifyReq)
 		if !verify.Success {
 			return fail("VERIFY_FAILED", "包管理器返回 Success，但应用路径读回失败", errors.New(verify.Error), "pm_install_readback")
@@ -523,7 +523,7 @@ func (m *Manager) appManage(ctx context.Context, req Request) Result {
 		if !commandSucceededWith(result, "Success") {
 			return result
 		}
-		verify := m.appInfo(ctx, Request{Tool: "zcr521_app_info", Args: map[string]any{"action": "path", "package": pkg, "user": user}})
+		verify := m.appInfo(ctx, Request{Tool: "aplm_app_info", Args: map[string]any{"action": "path", "package": pkg, "user": user}})
 		if verify.Success {
 			return fail("VERIFY_FAILED", "卸载命令返回成功但应用仍对目标用户可见", errors.New(pkg), "pm_uninstall_readback")
 		}
@@ -749,7 +749,7 @@ func (m *Manager) appPermission(ctx context.Context, req Request) Result {
 		return invalid("permission 操作必须指定 current 或单个用户")
 	}
 	if action == "list" {
-		return m.appInfo(ctx, Request{Tool: "zcr521_app_info", Args: map[string]any{"action": "permissions", "package": pkg, "user": user}})
+		return m.appInfo(ctx, Request{Tool: "aplm_app_info", Args: map[string]any{"action": "permissions", "package": pkg, "user": user}})
 	}
 	if action == "appops" {
 		action = "appop_get"
@@ -827,7 +827,7 @@ func (m *Manager) appExport(ctx context.Context, req Request) Result {
 	if err != nil || user == "all" {
 		return invalid("导出必须指定 current 或单个用户")
 	}
-	pathResult := m.appInfo(ctx, Request{Tool: "zcr521_app_info", Args: map[string]any{"action": "path", "package": pkg, "user": user}})
+	pathResult := m.appInfo(ctx, Request{Tool: "aplm_app_info", Args: map[string]any{"action": "path", "package": pkg, "user": user}})
 	if !pathResult.Success {
 		return pathResult
 	}

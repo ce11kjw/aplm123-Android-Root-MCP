@@ -40,107 +40,115 @@ type spec struct {
 }
 
 var specs = []spec{
-	{"zcr521_status", "读取服务、Root、地址、任务与运行时间状态。", []string{"get"}, ro()},
-	{"zcr521_capabilities", "读取或重新探测设备能力与降级原因。", []string{"get", "probe"}, ro()},
-	{"zcr521_config", "读取、验证、原子更新、导出或恢复服务配置。", []string{"get", "validate", "update", "export", "reset"}, rw(false)},
-	{"zcr521_fs_info", "列目录、读取元数据、磁盘与挂载信息。", []string{"stat", "list", "disk", "mounts"}, ro()},
-	{"zcr521_fs_read", "流式读取文本、二进制、行、尾部或资源链接。", []string{"text", "binary", "lines", "tail", "resource"}, ro()},
-	{"zcr521_fs_write", "创建、追加、截断、补丁写入或更新时间戳。", []string{"create", "append", "truncate", "patch", "touch"}, rw(true)},
-	{"zcr521_fs_manage", "目录、复制、移动、删除、权限、所有者与链接管理。", []string{"mkdir", "copy", "move", "remove", "chmod", "chown", "symlink", "hardlink", "selinux"}, rw(true)},
-	{"zcr521_fs_search", "按名称或内容搜索，查找大文件与重复文件。", []string{"name", "content", "large", "duplicates"}, roHeavy()},
-	{"zcr521_fs_hash", "计算或校验文件哈希。", []string{"calculate", "verify"}, roHeavy()},
-	{"zcr521_archive", "创建、解压、列出或校验 ZIP/TAR/GZIP/XZ/7z。", []string{"create", "extract", "list", "test"}, heavy(true)},
-	{"zcr521_download", "可重试、续传、批量下载及状态/取消。", []string{"start", "batch", "status", "cancel"}, heavy(true)},
-	{"zcr521_transfer_upload", "创建、查询、分块完成或取消上传。", []string{"create", "chunk", "status", "complete", "cancel"}, heavy(true)},
-	{"zcr521_transfer_export", "将文件、目录或任务产物导出到临时下载地址。", []string{"file", "directory", "task"}, heavy(false)},
-	{"zcr521_shell", "以 root、shell 或指定 UID 执行命令。", []string{"exec"}, rw(true)},
-	{"zcr521_script", "验证或执行多行脚本。", []string{"validate", "run"}, rw(true)},
-	{"zcr521_task", "读取、列出、更新、取消任务或读取日志。", []string{"get", "list", "update", "cancel", "logs"}, rw(false)},
-	{"zcr521_skill", "渐进匹配、按需读取并管理内置及自动学习技能。", []string{"match", "get", "list", "stats", "forget"}, rw(false)},
-	{"zcr521_app_list", "按显示名或包名查询普通、系统或指定用户应用。", []string{"list"}, ro()},
-	{"zcr521_app_info", "按显示名、包名或组件读取应用、组件与权限详情。", []string{"get", "components", "permissions"}, ro()},
-	{"zcr521_app_install", "通过 Package Manager session 安装 APK/Split/APKS/XAPK。", []string{"apk", "split", "apks", "xapk", "session"}, heavy(true)},
-	{"zcr521_app_manage", "按显示名、包名或组件启动应用，并管理精确包名对应的应用。", []string{"launch", "stop", "clear_cache", "clear_data", "enable", "disable", "uninstall", "user"}, rw(true)},
-	{"zcr521_app_permission", "列出、授予、撤销权限或管理 AppOps。", []string{"list", "grant", "revoke", "appops"}, rw(true)},
-	{"zcr521_app_export", "导出 APK、Split 或应用包。", []string{"apk", "splits", "bundle"}, heavy(false)},
-	{"zcr521_root_info", "检测 Root 框架、能力与运行时自检。", []string{"detect", "capabilities", "self_test"}, ro()},
-	{"zcr521_root_module", "管理 Magisk、KernelSU 或 APatch 模块生命周期。", []string{"list", "info", "install", "update", "remove", "enable", "disable", "action", "backup", "restore", "logs"}, heavy(true)},
-	{"zcr521_systemless", "应用、移除、列出或校验 Systemless 覆盖。", []string{"apply", "remove", "list", "verify"}, heavy(true)},
-	{"zcr521_process", "列出或检查进程，发送信号、调整优先级、查看 fd。", []string{"list", "info", "signal", "kill", "renice", "fds"}, rw(true)},
-	{"zcr521_service", "分型管理 Binder、应用 Service 与 init 服务。", []string{"binder_list", "binder_call", "app_start", "app_stop", "init_status", "init_start", "init_stop", "init_restart"}, rw(true)},
-	{"zcr521_property", "读取、列出、设置或恢复 Android 属性。", []string{"get", "list", "set", "reset"}, rw(true)},
-	{"zcr521_setting", "读取、列出、写入或删除 Android Settings。", []string{"get", "list", "put", "delete"}, rw(true)},
-	{"zcr521_display", "读取或调整亮度、尺寸、密度与旋转。", []string{"get", "brightness", "size", "density", "rotation"}, rw(true)},
-	{"zcr521_audio", "读取或调整音量、静音与音频路由。", []string{"get", "volume", "mute", "route"}, rw(true)},
-	{"zcr521_connectivity", "读取或调整 Wi-Fi、移动数据、飞行模式、蓝牙与 NFC。", []string{"get", "wifi", "mobile_data", "airplane_mode", "bluetooth", "nfc"}, rw(true)},
-	{"zcr521_locale_time", "读取或调整语言区域、时区与时间格式。", []string{"get", "locale", "timezone", "time_format"}, rw(true)},
-	{"zcr521_input_method", "列出、读取、选择、启用或禁用输入法。", []string{"list", "get", "set", "enable", "disable"}, rw(true)},
-	{"zcr521_app_policy", "管理待机桶、后台与电池优化策略。", []string{"get", "standby_bucket", "background", "battery_optimization"}, rw(true)},
-	{"zcr521_default_app", "读取、设置或清除默认应用。", []string{"get", "set", "clear"}, rw(true)},
-	{"zcr521_notification", "读取或调整通知与监听器权限。", []string{"get", "allow", "deny", "listener"}, rw(true)},
-	{"zcr521_accessibility", "列出、读取、启用或禁用无障碍服务。", []string{"list", "get", "enable", "disable"}, rw(true)},
-	{"zcr521_developer", "读取或调整 ADB、常亮、动画及模拟位置设置。", []string{"get", "adb", "stay_awake", "animation", "mock_location"}, rw(true)},
-	{"zcr521_device_info", "读取设备、电池、存储与传感器信息。", []string{"get", "battery", "storage", "sensors"}, ro()},
-	{"zcr521_power", "重启到系统/Recovery/Bootloader/Fastbootd 或关机。", []string{"reboot", "recovery", "bootloader", "fastbootd", "shutdown", "soft_reboot"}, rw(true)},
-	{"zcr521_screen", "截图、录屏、前台 Activity、唤醒或休眠。", []string{"screenshot", "record", "foreground", "wake", "sleep"}, rw(true)},
-	{"zcr521_input", "点击、滑动、输入文本、按键与状态栏操作。", []string{"tap", "swipe", "text", "keyevent", "statusbar"}, rw(true)},
-	{"zcr521_network", "网络诊断、持久 HTTP/Cookie、HTML/浏览器捕获、RSS/Atom 与 WebSocket。", []string{"interfaces", "routes", "dns", "ping", "resolve", "http", "ports", "connections", "wifi", "proxy", "connectivity", "web_extract", "browser_capture", "feed_parse", "cookie_list", "cookie_set", "cookie_delete", "cookie_clear", "ws_connect", "ws_send", "ws_receive", "ws_ping", "ws_close", "ws_list"}, rw(false)},
-	{"zcr521_log", "读取 Logcat、内核、dmesg、模块/MCP 日志或实时流。", []string{"logcat", "kernel", "dmesg", "module", "mcp", "stream", "clear"}, rw(false)},
-	{"zcr521_diagnostics", "执行自检或生成完整诊断报告。", []string{"self_test", "collect"}, heavy(false)},
-	{"zcr521_schedule", "管理一次、周期、Cron 及事件触发任务。", []string{"list", "create", "update", "remove", "enable", "disable", "run"}, rw(true)},
-	{"zcr521_backup", "创建、列出、验证、恢复或删除备份。", []string{"create", "list", "verify", "restore", "remove"}, heavy(true)},
+	{"aplm_status", "读取服务、Root、地址、任务与运行时间状态。", []string{"get"}, ro()},
+	{"aplm_capabilities", "读取或重新探测设备能力与降级原因。", []string{"get", "probe"}, ro()},
+	{"aplm_config", "读取、验证、原子更新、导出或恢复服务配置。", []string{"get", "validate", "update", "export", "reset"}, rw(false)},
+	{"aplm_fs_info", "列目录、读取元数据、磁盘与挂载信息。", []string{"stat", "list", "disk", "mounts"}, ro()},
+	{"aplm_fs_read", "流式读取文本、二进制、行、尾部或资源链接。", []string{"text", "binary", "lines", "tail", "resource"}, ro()},
+	{"aplm_fs_write", "创建、追加、截断、补丁写入或更新时间戳。", []string{"create", "append", "truncate", "patch", "touch"}, rw(true)},
+	{"aplm_fs_manage", "目录、复制、移动、删除、权限、所有者与链接管理。", []string{"mkdir", "copy", "move", "remove", "chmod", "chown", "symlink", "hardlink", "selinux"}, rw(true)},
+	{"aplm_fs_search", "按名称或内容搜索，查找大文件与重复文件。", []string{"name", "content", "large", "duplicates"}, roHeavy()},
+	{"aplm_fs_hash", "计算或校验文件哈希。", []string{"calculate", "verify"}, roHeavy()},
+	{"aplm_archive", "创建、解压、列出或校验 ZIP/TAR/GZIP/XZ/7z。", []string{"create", "extract", "list", "test"}, heavy(true)},
+	{"aplm_download", "可重试、续传、批量下载及状态/取消。", []string{"start", "batch", "status", "cancel"}, heavy(true)},
+	{"aplm_transfer_upload", "创建、查询、分块完成或取消上传。", []string{"create", "chunk", "status", "complete", "cancel"}, heavy(true)},
+	{"aplm_transfer_export", "将文件、目录或任务产物导出到临时下载地址。", []string{"file", "directory", "task"}, heavy(false)},
+	{"aplm_shell", "以 root、shell 或指定 UID 执行命令。", []string{"exec"}, rw(true)},
+	{"aplm_script", "验证或执行多行脚本。", []string{"validate", "run"}, rw(true)},
+	{"aplm_task", "读取、列出、更新、取消任务或读取日志。", []string{"get", "list", "update", "cancel", "logs"}, rw(false)},
+	{"aplm_skill", "渐进匹配、按需读取并管理内置及自动学习技能。", []string{"match", "get", "list", "stats", "forget"}, rw(false)},
+	{"aplm_app_list", "按显示名或包名查询普通、系统或指定用户应用。", []string{"list"}, ro()},
+	{"aplm_app_info", "按显示名、包名或组件读取应用、组件与权限详情。", []string{"get", "components", "permissions"}, ro()},
+	{"aplm_app_install", "通过 Package Manager session 安装 APK/Split/APKS/XAPK。", []string{"apk", "split", "apks", "xapk", "session"}, heavy(true)},
+	{"aplm_app_manage", "按显示名、包名或组件启动应用，并管理精确包名对应的应用。", []string{"launch", "stop", "clear_cache", "clear_data", "enable", "disable", "uninstall", "user"}, rw(true)},
+	{"aplm_app_permission", "列出、授予、撤销权限或管理 AppOps。", []string{"list", "grant", "revoke", "appops"}, rw(true)},
+	{"aplm_app_export", "导出 APK、Split 或应用包。", []string{"apk", "splits", "bundle"}, heavy(false)},
+	{"aplm_root_info", "检测 Root 框架、能力与运行时自检。", []string{"detect", "capabilities", "self_test"}, ro()},
+	{"aplm_root_module", "管理 Magisk、KernelSU 或 APatch 模块生命周期。", []string{"list", "info", "install", "update", "remove", "enable", "disable", "action", "backup", "restore", "logs"}, heavy(true)},
+	{"aplm_systemless", "应用、移除、列出或校验 Systemless 覆盖。", []string{"apply", "remove", "list", "verify"}, heavy(true)},
+	{"aplm_process", "列出或检查进程，发送信号、调整优先级、查看 fd。", []string{"list", "info", "signal", "kill", "renice", "fds"}, rw(true)},
+	{"aplm_service", "分型管理 Binder、应用 Service 与 init 服务。", []string{"binder_list", "binder_call", "app_start", "app_stop", "init_status", "init_start", "init_stop", "init_restart"}, rw(true)},
+	{"aplm_property", "读取、列出、设置或恢复 Android 属性。", []string{"get", "list", "set", "reset"}, rw(true)},
+	{"aplm_setting", "读取、列出、写入或删除 Android Settings。", []string{"get", "list", "put", "delete"}, rw(true)},
+	{"aplm_display", "读取或调整亮度、尺寸、密度与旋转。", []string{"get", "brightness", "size", "density", "rotation"}, rw(true)},
+	{"aplm_audio", "读取或调整音量、静音与音频路由。", []string{"get", "volume", "mute", "route"}, rw(true)},
+	{"aplm_connectivity", "读取或调整 Wi-Fi、移动数据、飞行模式、蓝牙与 NFC。", []string{"get", "wifi", "mobile_data", "airplane_mode", "bluetooth", "nfc"}, rw(true)},
+	{"aplm_locale_time", "读取或调整语言区域、时区与时间格式。", []string{"get", "locale", "timezone", "time_format"}, rw(true)},
+	{"aplm_input_method", "列出、读取、选择、启用或禁用输入法。", []string{"list", "get", "set", "enable", "disable"}, rw(true)},
+	{"aplm_app_policy", "管理待机桶、后台与电池优化策略。", []string{"get", "standby_bucket", "background", "battery_optimization"}, rw(true)},
+	{"aplm_default_app", "读取、设置或清除默认应用。", []string{"get", "set", "clear"}, rw(true)},
+	{"aplm_notification", "读取或调整通知与监听器权限。", []string{"get", "allow", "deny", "listener"}, rw(true)},
+	{"aplm_accessibility", "列出、读取、启用或禁用无障碍服务。", []string{"list", "get", "enable", "disable"}, rw(true)},
+	{"aplm_developer", "读取或调整 ADB、常亮、动画及模拟位置设置。", []string{"get", "adb", "stay_awake", "animation", "mock_location"}, rw(true)},
+	{"aplm_device_info", "读取设备、电池、存储与传感器信息。", []string{"get", "battery", "storage", "sensors"}, ro()},
+	{"aplm_power", "重启到系统/Recovery/Bootloader/Fastbootd 或关机。", []string{"reboot", "recovery", "bootloader", "fastbootd", "shutdown", "soft_reboot"}, rw(true)},
+	{"aplm_screen", "截图、录屏、前台 Activity、唤醒或休眠。", []string{"screenshot", "record", "foreground", "wake", "sleep"}, rw(true)},
+	{"aplm_input", "点击、滑动、输入文本、按键与状态栏操作。", []string{"tap", "swipe", "text", "keyevent", "statusbar"}, rw(true)},
+	{"aplm_network", "网络诊断、持久 HTTP/Cookie、HTML/浏览器捕获、RSS/Atom 与 WebSocket。", []string{"interfaces", "routes", "dns", "ping", "resolve", "http", "ports", "connections", "wifi", "proxy", "connectivity", "web_extract", "browser_capture", "feed_parse", "cookie_list", "cookie_set", "cookie_delete", "cookie_clear", "ws_connect", "ws_send", "ws_receive", "ws_ping", "ws_close", "ws_list"}, rw(false)},
+	{"aplm_log", "读取 Logcat、内核、dmesg、模块/MCP 日志或实时流。", []string{"logcat", "kernel", "dmesg", "module", "mcp", "stream", "clear"}, rw(false)},
+	{"aplm_diagnostics", "执行自检或生成完整诊断报告。", []string{"self_test", "collect"}, heavy(false)},
+	{"aplm_schedule", "管理一次、周期、Cron 及事件触发任务。", []string{"list", "create", "update", "remove", "enable", "disable", "run"}, rw(true)},
+	{"aplm_backup", "创建、列出、验证、恢复或删除备份。", []string{"create", "list", "verify", "restore", "remove"}, heavy(true)},
+	{"aplm_ssh", "通过 SSH 连接远端执行命令、传输文件与建立端口转发。", []string{"connect", "exec", "upload", "download", "forward", "unforward", "list", "close", "keys"}, rw(true)},
+	{"aplm_clipboard", "读取、写入、清空剪贴板或等待新内容。", []string{"get", "set", "clear", "watch"}, rw(true)},
+	{"aplm_ui", "按 text/resourceId/class 定位界面元素并点击、输入、滚动。", []string{"dump", "find", "click", "wait", "exists", "type", "scroll_to"}, rw(true)},
+	{"aplm_share", "用系统程序打开、分享文件或链接，以及调起 APK 安装。", []string{"view", "share", "open_url", "install", "resolve"}, rw(true)},
 }
 
 var toolTitles = map[string]string{
-	"zcr521_status":          "服务状态",
-	"zcr521_capabilities":    "设备能力",
-	"zcr521_config":          "服务配置",
-	"zcr521_fs_info":         "文件信息",
-	"zcr521_fs_read":         "读取文件",
-	"zcr521_fs_write":        "写入文件",
-	"zcr521_fs_manage":       "管理文件",
-	"zcr521_fs_search":       "搜索文件",
-	"zcr521_fs_hash":         "文件哈希",
-	"zcr521_archive":         "压缩归档",
-	"zcr521_download":        "文件下载",
-	"zcr521_transfer_upload": "分块上传",
-	"zcr521_transfer_export": "导出文件",
-	"zcr521_shell":           "执行命令",
-	"zcr521_script":          "执行脚本",
-	"zcr521_task":            "任务管理",
-	"zcr521_skill":           "技能与记忆",
-	"zcr521_app_list":        "应用列表",
-	"zcr521_app_info":        "应用信息",
-	"zcr521_app_install":     "安装应用",
-	"zcr521_app_manage":      "管理应用",
-	"zcr521_app_permission":  "应用权限",
-	"zcr521_app_export":      "导出应用",
-	"zcr521_root_info":       "Root 信息",
-	"zcr521_root_module":     "Root 模块",
-	"zcr521_systemless":      "Systemless 覆盖",
-	"zcr521_process":         "进程管理",
-	"zcr521_service":         "系统服务",
-	"zcr521_property":        "系统属性",
-	"zcr521_setting":         "系统设置",
-	"zcr521_display":         "显示设置",
-	"zcr521_audio":           "音频设置",
-	"zcr521_connectivity":    "连接设置",
-	"zcr521_locale_time":     "语言与时间",
-	"zcr521_input_method":    "输入法管理",
-	"zcr521_app_policy":      "应用策略",
-	"zcr521_default_app":     "默认应用",
-	"zcr521_notification":    "通知管理",
-	"zcr521_accessibility":   "无障碍服务",
-	"zcr521_developer":       "开发者设置",
-	"zcr521_device_info":     "设备信息",
-	"zcr521_power":           "电源控制",
-	"zcr521_screen":          "屏幕工具",
-	"zcr521_input":           "输入控制",
-	"zcr521_network":         "网络工具",
-	"zcr521_log":             "日志读取",
-	"zcr521_diagnostics":     "系统诊断",
-	"zcr521_schedule":        "定时任务",
-	"zcr521_backup":          "备份恢复",
+	"aplm_status":          "服务状态",
+	"aplm_capabilities":    "设备能力",
+	"aplm_config":          "服务配置",
+	"aplm_fs_info":         "文件信息",
+	"aplm_fs_read":         "读取文件",
+	"aplm_fs_write":        "写入文件",
+	"aplm_fs_manage":       "管理文件",
+	"aplm_fs_search":       "搜索文件",
+	"aplm_fs_hash":         "文件哈希",
+	"aplm_archive":         "压缩归档",
+	"aplm_download":        "文件下载",
+	"aplm_transfer_upload": "分块上传",
+	"aplm_transfer_export": "导出文件",
+	"aplm_shell":           "执行命令",
+	"aplm_script":          "执行脚本",
+	"aplm_task":            "任务管理",
+	"aplm_skill":           "技能与记忆",
+	"aplm_app_list":        "应用列表",
+	"aplm_app_info":        "应用信息",
+	"aplm_app_install":     "安装应用",
+	"aplm_app_manage":      "管理应用",
+	"aplm_app_permission":  "应用权限",
+	"aplm_app_export":      "导出应用",
+	"aplm_root_info":       "Root 信息",
+	"aplm_root_module":     "Root 模块",
+	"aplm_systemless":      "Systemless 覆盖",
+	"aplm_process":         "进程管理",
+	"aplm_service":         "系统服务",
+	"aplm_property":        "系统属性",
+	"aplm_setting":         "系统设置",
+	"aplm_display":         "显示设置",
+	"aplm_audio":           "音频设置",
+	"aplm_connectivity":    "连接设置",
+	"aplm_locale_time":     "语言与时间",
+	"aplm_input_method":    "输入法管理",
+	"aplm_app_policy":      "应用策略",
+	"aplm_default_app":     "默认应用",
+	"aplm_notification":    "通知管理",
+	"aplm_accessibility":   "无障碍服务",
+	"aplm_developer":       "开发者设置",
+	"aplm_device_info":     "设备信息",
+	"aplm_power":           "电源控制",
+	"aplm_screen":          "屏幕工具",
+	"aplm_input":           "输入控制",
+	"aplm_network":         "网络工具",
+	"aplm_log":             "日志读取",
+	"aplm_diagnostics":     "系统诊断",
+	"aplm_schedule":        "定时任务",
+	"aplm_backup":          "备份恢复",
+	"aplm_ssh":             "SSH 远程",
+	"aplm_clipboard":       "剪贴板",
+	"aplm_ui":              "界面元素",
+	"aplm_share":           "打开与分享",
 }
 
 // toolParameters is the public wire contract. It deliberately lists every
@@ -148,55 +156,59 @@ var toolTitles = map[string]string{
 // consumed by strict JSON Schema clients without falling back to an
 // undocumented free-form object.
 var toolParameters = map[string][]string{
-	"zcr521_status":          {},
-	"zcr521_capabilities":    {},
-	"zcr521_config":          {"config", "destination"},
-	"zcr521_fs_info":         {"path"},
-	"zcr521_fs_read":         {"path", "encoding", "offset", "length", "limit", "startLine", "line", "lineCount", "count", "bytes"},
-	"zcr521_fs_write":        {"path", "content", "data", "encoding", "mode", "parents", "size", "offset", "createParents"},
-	"zcr521_fs_manage":       {"path", "source", "src", "destination", "dest", "target", "paths", "parents", "mode", "overwrite", "recursive", "confirmDangerous", "uid", "gid", "context"},
-	"zcr521_fs_search":       {"path", "root", "content", "query", "text", "limit", "maxResults", "name", "pattern", "extension", "ext", "minSize", "maxSize", "maxFiles", "modifiedAfter", "modifiedBefore"},
-	"zcr521_fs_hash":         {"path", "algorithm", "expected", "digest", "hash"},
-	"zcr521_archive":         {"format", "type", "destination", "output", "path", "sources", "source", "inputs", "archive", "overwrite", "background"},
-	"zcr521_download":        {"url", "path", "destination", "output", "overwrite", "resume", "retries", "sha256", "maxBytes", "headers", "timeout", "timeoutMs", "items", "taskId", "background"},
-	"zcr521_transfer_upload": {"path", "destination", "overwrite", "content", "data", "offset", "size", "expectedSize", "sha256"},
-	"zcr521_transfer_export": {"taskId", "artifactIndex", "index", "path", "destination", "output", "background"},
-	"zcr521_shell":           {"command", "cmd", "cwd", "workDir", "env", "stdin", "timeout", "timeoutMs", "identity", "user", "uid", "gid", "background"},
-	"zcr521_script":          {"script", "content", "path", "cwd", "workDir", "env", "stdin", "timeout", "timeoutMs", "identity", "user", "uid", "gid", "background"},
-	"zcr521_task":            {"taskId", "id", "progress", "message", "limit", "offset"},
-	"zcr521_skill":           {"query", "id", "skillSource", "limit", "offset", "confirmDangerous"},
-	"zcr521_app_list":        {"user", "query", "appName", "name", "system", "limit", "offset"},
-	"zcr521_app_info":        {"package", "packageName", "component", "query", "appName", "name", "user"},
-	"zcr521_app_install":     {"path", "apk", "paths", "apks", "archive", "package", "packageName", "replace", "downgrade", "grantRuntimePermissions", "user", "operation", "sessionId", "name", "splitName", "background"},
-	"zcr521_app_manage":      {"package", "packageName", "component", "query", "appName", "name", "user", "keepData", "enabled", "operation", "mode"},
-	"zcr521_app_permission":  {"package", "packageName", "permission", "mode", "user"},
-	"zcr521_app_export":      {"package", "packageName", "destination", "output", "user", "background"},
-	"zcr521_root_info":       {},
-	"zcr521_root_module":     {"id", "moduleId", "path", "zip", "destination", "output", "source", "archive", "format", "overwrite", "background"},
-	"zcr521_systemless":      {"source", "target", "path", "lower", "upper", "work", "lazy", "background"},
-	"zcr521_process":         {"query", "name", "package", "pid", "signal", "priority"},
-	"zcr521_service":         {"kind", "type", "name", "service", "code", "transaction", "arguments", "args", "package", "packageName", "component", "user"},
-	"zcr521_property":        {"key", "name", "value"},
-	"zcr521_setting":         {"namespace", "table", "key", "value", "user"},
-	"zcr521_display":         {"value", "milliseconds", "auto", "mode", "scale", "reset"},
-	"zcr521_audio":           {"stream", "level", "value", "muted", "mode"},
-	"zcr521_connectivity":    {"enabled", "host", "hostname", "port", "mode"},
-	"zcr521_locale_time":     {"timezone", "locale", "value", "time"},
-	"zcr521_input_method":    {"id", "component", "user"},
-	"zcr521_app_policy":      {"package", "packageName", "user", "allowed", "mode", "value"},
-	"zcr521_default_app":     {"package", "packageName", "component", "role", "user"},
-	"zcr521_notification":    {"package", "packageName", "component", "allowed", "user"},
-	"zcr521_accessibility":   {"id", "component", "user"},
-	"zcr521_developer":       {"name", "key", "value", "enabled", "scale"},
-	"zcr521_device_info":     {"path"},
-	"zcr521_power":           {"delayMs", "confirmDangerous"},
-	"zcr521_screen":          {"path", "output", "duration", "seconds", "bitRate", "background"},
-	"zcr521_input":           {"x", "y", "x1", "y1", "x2", "y2", "durationMs", "text", "value", "key", "code"},
-	"zcr521_network":         {"host", "name", "port", "count", "timeout", "timeoutMs", "url", "method", "body", "headers", "maxResponseBytes", "enabled", "mode", "jar", "includeValues", "confirmSensitive", "confirmDangerous", "value", "cookiePath", "domain", "secure", "httpOnly", "maxAge", "maxItems", "offset", "maxChars", "renderWaitMs", "user", "connectionId", "message", "binaryBase64", "maxMessageBytes", "subprotocols", "reason"},
-	"zcr521_log":             {"follow", "lines", "timeout", "timeoutMs", "path", "target", "background"},
-	"zcr521_diagnostics":     {"path", "output", "background"},
-	"zcr521_schedule":        {"id", "scheduleId", "name", "type", "tool", "targetTool", "targetArgs", "command", "enabled", "retryCount", "retries", "retryDelaySeconds", "at", "everySeconds", "intervalSeconds", "time", "weekday", "cron", "expression"},
-	"zcr521_backup":          {"type", "sources", "paths", "path", "destination", "output", "sha256", "backup", "confirmDangerous", "overwrite", "background"},
+	"aplm_status":          {},
+	"aplm_capabilities":    {},
+	"aplm_config":          {"config", "destination"},
+	"aplm_fs_info":         {"path"},
+	"aplm_fs_read":         {"path", "encoding", "offset", "length", "limit", "startLine", "line", "lineCount", "count", "bytes"},
+	"aplm_fs_write":        {"path", "content", "data", "encoding", "mode", "parents", "size", "offset", "createParents"},
+	"aplm_fs_manage":       {"path", "source", "src", "destination", "dest", "target", "paths", "parents", "mode", "overwrite", "recursive", "confirmDangerous", "uid", "gid", "context"},
+	"aplm_fs_search":       {"path", "root", "content", "query", "text", "limit", "maxResults", "name", "pattern", "extension", "ext", "minSize", "maxSize", "maxFiles", "modifiedAfter", "modifiedBefore"},
+	"aplm_fs_hash":         {"path", "algorithm", "expected", "digest", "hash"},
+	"aplm_archive":         {"format", "type", "destination", "output", "path", "sources", "source", "inputs", "archive", "overwrite", "background"},
+	"aplm_download":        {"url", "path", "destination", "output", "overwrite", "resume", "retries", "sha256", "maxBytes", "headers", "timeout", "timeoutMs", "items", "taskId", "background"},
+	"aplm_transfer_upload": {"path", "destination", "overwrite", "content", "data", "offset", "size", "expectedSize", "sha256"},
+	"aplm_transfer_export": {"taskId", "artifactIndex", "index", "path", "destination", "output", "background"},
+	"aplm_shell":           {"command", "cmd", "cwd", "workDir", "env", "stdin", "timeout", "timeoutMs", "identity", "user", "uid", "gid", "background"},
+	"aplm_script":          {"script", "content", "path", "cwd", "workDir", "env", "stdin", "timeout", "timeoutMs", "identity", "user", "uid", "gid", "background"},
+	"aplm_task":            {"taskId", "id", "progress", "message", "limit", "offset"},
+	"aplm_skill":           {"query", "id", "skillSource", "limit", "offset", "confirmDangerous"},
+	"aplm_app_list":        {"user", "query", "appName", "name", "system", "limit", "offset"},
+	"aplm_app_info":        {"package", "packageName", "component", "query", "appName", "name", "user"},
+	"aplm_app_install":     {"path", "apk", "paths", "apks", "archive", "package", "packageName", "replace", "downgrade", "grantRuntimePermissions", "user", "operation", "sessionId", "name", "splitName", "background"},
+	"aplm_app_manage":      {"package", "packageName", "component", "query", "appName", "name", "user", "keepData", "enabled", "operation", "mode"},
+	"aplm_app_permission":  {"package", "packageName", "permission", "mode", "user"},
+	"aplm_app_export":      {"package", "packageName", "destination", "output", "user", "background"},
+	"aplm_root_info":       {},
+	"aplm_root_module":     {"id", "moduleId", "path", "zip", "destination", "output", "source", "archive", "format", "overwrite", "background"},
+	"aplm_systemless":      {"source", "target", "path", "lower", "upper", "work", "lazy", "background"},
+	"aplm_process":         {"query", "name", "package", "pid", "signal", "priority"},
+	"aplm_service":         {"kind", "type", "name", "service", "code", "transaction", "arguments", "args", "package", "packageName", "component", "user"},
+	"aplm_property":        {"key", "name", "value"},
+	"aplm_setting":         {"namespace", "table", "key", "value", "user"},
+	"aplm_display":         {"value", "milliseconds", "auto", "mode", "scale", "reset"},
+	"aplm_audio":           {"stream", "level", "value", "muted", "mode"},
+	"aplm_connectivity":    {"enabled", "host", "hostname", "port", "mode"},
+	"aplm_locale_time":     {"timezone", "locale", "value", "time"},
+	"aplm_input_method":    {"id", "component", "user"},
+	"aplm_app_policy":      {"package", "packageName", "user", "allowed", "mode", "value"},
+	"aplm_default_app":     {"package", "packageName", "component", "role", "user"},
+	"aplm_notification":    {"package", "packageName", "component", "allowed", "user"},
+	"aplm_accessibility":   {"id", "component", "user"},
+	"aplm_developer":       {"name", "key", "value", "enabled", "scale"},
+	"aplm_device_info":     {"path"},
+	"aplm_power":           {"delayMs", "confirmDangerous"},
+	"aplm_screen":          {"path", "output", "duration", "seconds", "bitRate", "background"},
+	"aplm_input":           {"x", "y", "x1", "y1", "x2", "y2", "durationMs", "text", "value", "key", "code"},
+	"aplm_network":         {"host", "name", "port", "count", "timeout", "timeoutMs", "url", "method", "body", "headers", "maxResponseBytes", "enabled", "mode", "jar", "includeValues", "confirmSensitive", "confirmDangerous", "value", "cookiePath", "domain", "secure", "httpOnly", "maxAge", "maxItems", "offset", "maxChars", "renderWaitMs", "user", "connectionId", "message", "binaryBase64", "maxMessageBytes", "subprotocols", "reason"},
+	"aplm_log":             {"follow", "lines", "timeout", "timeoutMs", "path", "target", "background"},
+	"aplm_diagnostics":     {"path", "output", "background"},
+	"aplm_schedule":        {"id", "scheduleId", "name", "type", "tool", "targetTool", "targetArgs", "command", "enabled", "retryCount", "retries", "retryDelaySeconds", "at", "everySeconds", "intervalSeconds", "time", "weekday", "cron", "expression"},
+	"aplm_backup":          {"type", "sources", "paths", "path", "destination", "output", "sha256", "backup", "confirmDangerous", "overwrite", "background"},
+	"aplm_ssh":             {"host", "port", "user", "password", "privateKey", "passphrase", "keyFile", "knownHosts", "insecure", "command", "cmd", "stdin", "env", "cwd", "target", "sessionId", "keep", "localPath", "remotePath", "remote", "src", "dest", "bindPort", "bindAddr", "targetHost", "targetPort", "forwardId", "forward", "all", "timeoutMs", "timeout", "background"},
+	"aplm_clipboard":       {"text", "content", "value", "contains", "timeoutMs", "timeout"},
+	"aplm_ui":              {"selector", "text", "textContains", "contentDescription", "contentDesc", "resourceId", "id", "className", "class", "package", "packageName", "index", "clickable", "longPress", "durationMs", "limit", "maxResults", "maxSwipes", "direction", "swipePercent", "timeoutMs", "timeout"},
+	"aplm_share":           {"path", "file", "source", "url", "link", "package", "packageName", "to", "mime", "type", "text", "user", "userId"},
 }
 
 func All(protocol string) Registry {
@@ -232,8 +244,8 @@ func RuntimeCompact(protocol string) Registry {
 		input := registry.Tools[index].InputSchema
 		delete(input, "$schema")
 		delete(input, "$id")
-		if registry.Tools[index].Name != "zcr521_network" && registry.Tools[index].Name != "zcr521_skill" &&
-			registry.Tools[index].Name != "zcr521_app_info" && registry.Tools[index].Name != "zcr521_app_manage" {
+		if registry.Tools[index].Name != "aplm_network" && registry.Tools[index].Name != "aplm_skill" &&
+			registry.Tools[index].Name != "aplm_app_info" && registry.Tools[index].Name != "aplm_app_manage" {
 			delete(input, "oneOf")
 		}
 		registry.Tools[index].OutputSchema = nil
@@ -272,8 +284,8 @@ func ValidateInvocation(name string, args map[string]any) error {
 	if !slices.Contains(found.actions, action) {
 		return fmt.Errorf("tool %s does not support action %q", name, action)
 	}
-	if name == "zcr521_skill" || name == "zcr521_network" || name == "zcr521_app_list" ||
-		name == "zcr521_app_info" || name == "zcr521_app_manage" {
+	if name == "aplm_skill" || name == "aplm_network" || name == "aplm_app_list" ||
+		name == "aplm_app_info" || name == "aplm_app_manage" {
 		if err := validateSchemaValue("arguments", args, actionSchema(found.name, found.actions)); err != nil {
 			return fmt.Errorf("tool %s: %w", name, err)
 		}
@@ -307,7 +319,7 @@ func actionSchema(name string, actions []string) map[string]any {
 		}
 		properties[parameter] = definition
 	}
-	if name == "zcr521_app_list" || name == "zcr521_app_info" || name == "zcr521_app_manage" {
+	if name == "aplm_app_list" || name == "aplm_app_info" || name == "aplm_app_manage" {
 		applicationName := map[string]any{"type": "string", "minLength": 1, "maxLength": 256, "description": "应用显示名或搜索名称。"}
 		for _, parameter := range []string{"query", "appName", "name"} {
 			if _, exists := properties[parameter]; exists {
@@ -315,13 +327,13 @@ func actionSchema(name string, actions []string) map[string]any {
 			}
 		}
 	}
-	if name == "zcr521_app_list" {
+	if name == "aplm_app_list" {
 		properties["limit"] = map[string]any{"type": "integer", "minimum": 1, "maximum": 50, "description": "本页最多返回的应用数。"}
 		properties["offset"] = map[string]any{"type": "integer", "minimum": 0, "maximum": 100000, "description": "匹配结果的零基分页偏移。"}
 	}
 	return map[string]any{
 		"$schema":              Draft202012,
-		"$id":                  "https://zcr521.local/schema/tools/" + name + ".json",
+		"$id":                  "https://aplm123.local/schema/tools/" + name + ".json",
 		"type":                 "object",
 		"properties":           properties,
 		"required":             []string{"action"},
@@ -334,7 +346,7 @@ func actionVariant(tool, action string) map[string]any {
 	properties := map[string]any{"action": map[string]any{"const": action}}
 	required := []string{"action"}
 	variant := map[string]any{"title": action, "properties": properties, "required": required}
-	if tool == "zcr521_skill" {
+	if tool == "aplm_skill" {
 		switch action {
 		case "match":
 			properties["limit"] = map[string]any{"type": "integer", "minimum": 1, "maximum": 3}
@@ -345,12 +357,12 @@ func actionVariant(tool, action string) map[string]any {
 		variant["required"] = required
 		return variant
 	}
-	if tool == "zcr521_app_info" || tool == "zcr521_app_manage" {
+	if tool == "aplm_app_info" || tool == "aplm_app_manage" {
 		nameValue := map[string]any{"type": "string", "minLength": 1, "maxLength": 256}
 		for _, key := range []string{"query", "appName", "name"} {
 			properties[key] = nameValue
 		}
-		if tool == "zcr521_app_info" || action == "launch" {
+		if tool == "aplm_app_info" || action == "launch" {
 			variant["anyOf"] = []any{
 				map[string]any{"required": []string{"package"}},
 				map[string]any{"required": []string{"packageName"}},
@@ -367,7 +379,7 @@ func actionVariant(tool, action string) map[string]any {
 		}
 		return variant
 	}
-	if tool != "zcr521_network" {
+	if tool != "aplm_network" {
 		return variant
 	}
 	httpURL := map[string]any{"type": "string", "format": "uri", "pattern": "^https?://", "maxLength": 8192}
@@ -609,6 +621,7 @@ func parameterCatalog() map[string]any {
 		"upper":                   pathValue("OverlayFS upperdir。"),
 		"url":                     map[string]any{"type": "string", "format": "uri", "pattern": "^(?:https?|wss?)://", "maxLength": 8192, "description": "HTTP(S) 或 WebSocket URL；具体 action 会进一步限制协议。"},
 		"user":                    map[string]any{"oneOf": []any{map[string]any{"type": "integer", "minimum": 0}, map[string]any{"type": "string", "minLength": 1}}, "description": "Android 用户 ID 或 Shell 身份兼容字段。"},
+		"userId":                  map[string]any{"oneOf": []any{map[string]any{"type": "integer", "minimum": 0}, map[string]any{"type": "string", "minLength": 1}}, "description": "user 的兼容别名：Android 用户 ID 或 current/all。"},
 		"value":                   map[string]any{"type": []string{"string", "integer", "boolean"}, "description": "设置值；具体类型由 action 决定。"},
 		"weekday":                 map[string]any{"type": "integer", "minimum": 0, "maximum": 6, "description": "星期，0 表示周日。"},
 		"work":                    pathValue("OverlayFS workdir。"),
@@ -620,6 +633,48 @@ func parameterCatalog() map[string]any {
 		"y1":                      integerValue("滑动起点 Y 坐标。", 0),
 		"y2":                      integerValue("滑动终点 Y 坐标。", 0),
 		"zip":                     pathValue("Root 模块 ZIP 路径。"),
+		// --- aplm_ssh 专用参数 ---
+		// 注意：host / port / user / timeout 等已在上方通用目录中定义，此处不重复声明。
+		"sshUser":    map[string]any{"oneOf": []any{map[string]any{"type": "integer", "minimum": 0}, map[string]any{"type": "string", "minLength": 1}}, "description": "SSH 登录用户名；兼容 user 字段。"},
+		"password":   stringValue("SSH 密码认证凭据。"),
+		"privateKey": stringValue("SSH 私钥文本（PEM/OpenSSH 格式）。"),
+		"passphrase": stringValue("加密私钥的 passphrase。"),
+		"keyFile":    pathValue("SSH 私钥文件路径；相对路径基于默认工作目录。"),
+		"knownHosts": pathValue("known_hosts 文件路径；默认写入状态目录下的 ssh/known_hosts。"),
+		"insecure":   booleanValue("跳过 SSH 主机密钥校验（不安全，仅用于可信内网调试）。"),
+		"keep":       booleanValue("connect 时是否保留会话供后续复用。"),
+		"localPath":  pathValue("本地文件路径；相对路径基于默认工作目录。"),
+		"remotePath": pathValue("远端文件路径（POSIX 语义，相对于登录用户家目录）。"),
+		"remote":     pathValue("remotePath 的兼容别名。"),
+		"bindPort":   integerValue("本地转发监听端口；0 表示随机分配。", 0),
+		"bindAddr":   stringValue("本地转发监听地址，默认 127.0.0.1。"),
+		"targetHost": stringValue("端口转发的目标主机（由远端解析）。"),
+		"targetPort": map[string]any{"type": "integer", "minimum": 1, "maximum": 65535, "description": "端口转发的目标端口。"},
+		"forwardId":  stringValue("端口转发 ID。"),
+		"forward":    stringValue("forwardId 的兼容别名。"),
+		"all":        booleanValue("是否对全部对象生效，例如关闭所有 SSH 会话。"),
+		// --- aplm_ui / aplm_share / aplm_clipboard 专用参数 ---
+		"selector": map[string]any{
+			"type":                 "object",
+			"description":          "元素定位条件对象（text/textContains/contentDescription/resourceId/class/index）。",
+			"additionalProperties": true,
+		},
+		"textContains":       stringValue("按文本包含关系匹配元素。"),
+		"contentDescription": stringValue("按无障碍描述精确匹配元素。"),
+		"contentDesc":        stringValue("contentDescription 的兼容别名。"),
+		"className":          stringValue("class 的兼容别名。"),
+		"resourceId":         stringValue("按资源 ID 精确匹配元素，例如 com.app:id/button。"),
+		"class":              stringValue("按控件类名匹配元素，可写全名或简写。"),
+		"clickable":          booleanValue("是否只匹配可点击元素。"),
+		"longPress":          booleanValue("是否使用长按而非点击。"),
+		"maxSwipes":          map[string]any{"type": "integer", "minimum": 1, "maximum": 50, "description": "滚动查找的最大滑动次数。"},
+		"direction":          map[string]any{"type": "string", "enum": []string{"up", "down"}, "description": "滚动方向。"},
+		"swipePercent":       map[string]any{"type": "integer", "minimum": 10, "maximum": 80, "description": "单次滑动的屏幕高度占比。"},
+		"mime":               stringValue("MIME 类型；不传时按扩展名推断。"),
+		"contains":           stringValue("仅当剪贴板内容包含该子串时才视为命中。"),
+		"file":               pathValue("path 的兼容别名。"),
+		"link":               stringValue("url 的兼容别名。"),
+		"to":                 stringValue("package 的兼容别名。"),
 	}
 }
 

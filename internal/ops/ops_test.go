@@ -17,7 +17,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/ulikunitz/xz"
-	"github.com/zcr521/android-ai-mcp/internal/schema"
+	"github.com/aplm123/android-ai-mcp/internal/schema"
 )
 
 func testManager(t *testing.T) *Manager {
@@ -32,8 +32,8 @@ func testManager(t *testing.T) *Manager {
 
 func TestAllPublicToolsAreDispatched(t *testing.T) {
 	manager := testManager(t)
-	if got, want := len(SupportedTools()), 49; got != want {
-		t.Fatalf("public tool count = %d, want %d", got, want)
+	if got, want := len(SupportedTools()), 53; got != want {
+		t.Fatalf("public tool count = %d, want %d (49 baseline + aplm_ssh)", got, want)
 	}
 	for _, tool := range SupportedTools() {
 		result := manager.Execute(context.Background(), Request{Tool: tool, Args: map[string]any{}})
@@ -56,11 +56,11 @@ func TestPackageNameRejectsPathTraversal(t *testing.T) {
 
 func TestSystemlessStagePathIsScopedToModuleSystemTree(t *testing.T) {
 	tests := map[string]string{
-		"/system/bin/demo":     "/data/adb/modules/zcr521.android.mcp/system/bin/demo",
-		"/system_ext/etc/demo": "/data/adb/modules/zcr521.android.mcp/system/system_ext/etc/demo",
-		"/product/etc/demo":    "/data/adb/modules/zcr521.android.mcp/system/product/etc/demo",
-		"/vendor/etc/demo":     "/data/adb/modules/zcr521.android.mcp/system/vendor/etc/demo",
-		"/odm/etc/demo":        "/data/adb/modules/zcr521.android.mcp/system/odm/etc/demo",
+		"/system/bin/demo":     "/data/adb/modules/aplm123.root.mcp/system/bin/demo",
+		"/system_ext/etc/demo": "/data/adb/modules/aplm123.root.mcp/system/system_ext/etc/demo",
+		"/product/etc/demo":    "/data/adb/modules/aplm123.root.mcp/system/product/etc/demo",
+		"/vendor/etc/demo":     "/data/adb/modules/aplm123.root.mcp/system/vendor/etc/demo",
+		"/odm/etc/demo":        "/data/adb/modules/aplm123.root.mcp/system/odm/etc/demo",
 	}
 	for target, want := range tests {
 		got, err := systemlessStagePath(target)
@@ -127,7 +127,7 @@ func TestEverySchemaActionReachesAnOperation(t *testing.T) {
 func TestChineseErrorsAreValidUTF8(t *testing.T) {
 	manager := testManager(t)
 	result := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_fs_info",
+		Tool: "aplm_fs_info",
 		Args: map[string]any{"action": "definitely_unknown", "path": "."},
 	})
 	combined := result.Message + "\n" + result.Error
@@ -147,14 +147,14 @@ func TestChineseErrorsAreValidUTF8(t *testing.T) {
 func TestFileReadWriteHashAndSearch(t *testing.T) {
 	manager := testManager(t)
 	write := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_fs_write",
+		Tool: "aplm_fs_write",
 		Args: map[string]any{"action": "write", "path": "nested/hello.txt", "content": "你好 Android"},
 	})
 	if !write.Success {
 		t.Fatalf("write failed: %+v", write)
 	}
 	read := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_fs_read",
+		Tool: "aplm_fs_read",
 		Args: map[string]any{"action": "text", "path": "nested/hello.txt"},
 	})
 	if !read.Success {
@@ -165,14 +165,14 @@ func TestFileReadWriteHashAndSearch(t *testing.T) {
 		t.Fatalf("unexpected content: %#v", data["content"])
 	}
 	hash := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_fs_hash",
+		Tool: "aplm_fs_hash",
 		Args: map[string]any{"action": "sha256", "path": "nested/hello.txt"},
 	})
 	if !hash.Success {
 		t.Fatalf("hash failed: %+v", hash)
 	}
 	search := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_fs_search",
+		Tool: "aplm_fs_search",
 		Args: map[string]any{"action": "search", "path": ".", "extension": ".txt"},
 	})
 	if !search.Success {
@@ -190,21 +190,21 @@ func TestXZAndTarXZRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	xzCreate := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_archive",
+		Tool: "aplm_archive",
 		Args: map[string]any{"action": "create", "format": "xz", "destination": "payload.txt.xz", "sources": []string{"payload.txt"}},
 	})
 	if !xzCreate.Success {
 		t.Fatalf("xz create failed: %+v", xzCreate)
 	}
 	xzTest := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_archive",
+		Tool: "aplm_archive",
 		Args: map[string]any{"action": "test", "format": "xz", "source": "payload.txt.xz"},
 	})
 	if !xzTest.Success {
 		t.Fatalf("xz test failed: %+v", xzTest)
 	}
 	xzExtract := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_archive",
+		Tool: "aplm_archive",
 		Args: map[string]any{"action": "extract", "format": "xz", "source": "payload.txt.xz", "destination": "xz-out"},
 	})
 	if !xzExtract.Success {
@@ -225,14 +225,14 @@ func TestXZAndTarXZRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	tarCreate := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_archive",
+		Tool: "aplm_archive",
 		Args: map[string]any{"action": "create", "format": "tar.xz", "destination": "tree.tar.xz", "sources": []string{"tree"}},
 	})
 	if !tarCreate.Success {
 		t.Fatalf("tar.xz create failed: %+v", tarCreate)
 	}
 	tarExtract := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_archive",
+		Tool: "aplm_archive",
 		Args: map[string]any{"action": "extract", "format": "tar.xz", "source": "tree.tar.xz", "destination": "tar-out"},
 	})
 	if !tarExtract.Success {
@@ -249,7 +249,7 @@ func TestFind7ZipPrefersConfiguredExecutable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("ZCR521_7ZZ", executable)
+	t.Setenv("aplm123_7ZZ", executable)
 	got, err := find7Zip()
 	if err != nil {
 		t.Fatal(err)
@@ -291,7 +291,7 @@ func TestTarXZRejectsPathTraversal(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_archive",
+		Tool: "aplm_archive",
 		Args: map[string]any{"action": "extract", "format": "tar.xz", "source": "evil.tar.xz", "destination": "safe"},
 	})
 	if result.Success {
@@ -321,7 +321,7 @@ func TestZIPRejectsPathTraversal(t *testing.T) {
 	_ = writer.Close()
 	_ = file.Close()
 	result := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_archive",
+		Tool: "aplm_archive",
 		Args: map[string]any{"action": "extract", "source": "evil.zip", "destination": "safe"},
 	})
 	if result.Success {
@@ -339,7 +339,7 @@ func TestChunkUploadResumeAndComplete(t *testing.T) {
 		chunk  []byte
 	}{{offset: 0, chunk: first}, {offset: int64(len(first)), chunk: second}} {
 		result := manager.Execute(context.Background(), Request{
-			Tool: "zcr521_transfer_upload",
+			Tool: "aplm_transfer_upload",
 			Args: map[string]any{
 				"action": "chunk", "path": "uploads/result.bin", "offset": part.offset,
 				"content": base64.StdEncoding.EncodeToString(part.chunk),
@@ -350,7 +350,7 @@ func TestChunkUploadResumeAndComplete(t *testing.T) {
 		}
 	}
 	complete := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_transfer_upload",
+		Tool: "aplm_transfer_upload",
 		Args: map[string]any{"action": "complete", "path": "uploads/result.bin", "expectedSize": len(payload)},
 	})
 	if !complete.Success {
@@ -371,7 +371,7 @@ func TestHTTPDownloadAndChecksum(t *testing.T) {
 	defer server.Close()
 	manager := testManager(t)
 	result := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_download",
+		Tool: "aplm_download",
 		Args: map[string]any{"url": server.URL + "/payload", "path": "downloads/payload.bin"},
 	})
 	if !result.Success {
@@ -390,7 +390,7 @@ func TestShellHonorsCurrentIdentityOnHost(t *testing.T) {
 		command = "echo host-shell"
 	}
 	result := manager.Execute(context.Background(), Request{
-		Tool: "zcr521_shell",
+		Tool: "aplm_shell",
 		Args: map[string]any{"action": "execute", "command": command, "identity": "current"},
 	})
 	if !result.Success || !strings.Contains(result.Stdout, "host-shell") {

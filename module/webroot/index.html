@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>aplm123 Root MCP</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#262b36; --fg:#e6e9ef;
+    --muted:#98a2b3; --accent:#4f8cff; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{--bg:#f6f7f9;--card:#fff;--line:#e4e7ec;--fg:#1a1d23;--muted:#667085;}
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans SC",sans-serif;
+    padding:calc(env(safe-area-inset-top) + 16px) 14px calc(env(safe-area-inset-bottom) + 28px);
+  }
+  .wrap{max-width:720px;margin:0 auto}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .mark{width:42px;height:42px;border-radius:12px;background:var(--accent);color:#fff;
+    display:grid;place-items:center;font-weight:700;font-size:20px;flex:none}
+  h1{font-size:17px;margin:0}
+  .sub{color:var(--muted);font-size:12px;margin-top:1px}
+  .pill{margin-left:auto;padding:5px 11px;border-radius:999px;font-size:12px;
+    background:var(--card);border:1px solid var(--line);white-space:nowrap}
+  .pill.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+  .pill.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+  .banner{margin:12px 0;padding:11px 13px;border-radius:var(--radius);font-size:12.5px;
+    background:color-mix(in srgb,var(--warn) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--warn) 35%,transparent)}
+  h2{font-size:13.5px;margin:20px 0 9px;color:var(--muted);font-weight:600;
+    letter-spacing:.03em;text-transform:uppercase}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:13px}
+  .label{color:var(--muted);font-size:11.5px;margin:0 0 5px}
+  .value{font-size:18px;font-weight:650;margin:0;word-break:break-all}
+  .value.sm{font-size:13px;font-weight:500}
+  .value.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12px}
+  .bar{height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:8px}
+  .bar > i{display:block;height:100%;background:var(--accent);transition:width .35s}
+  .bar > i.warn{background:var(--warn)}
+  .bar > i.bad{background:var(--bad)}
+  .list{margin:0;padding:0;list-style:none}
+  .list li{display:flex;justify-content:space-between;gap:10px;padding:9px 0;
+    border-bottom:1px solid var(--line);font-size:13px}
+  .list li:last-child{border-bottom:none}
+  .list .k{color:var(--muted)}
+  .list .v{font-weight:600;text-align:right;word-break:break-all}
+  .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+  button{font:inherit;font-weight:550;padding:11px 16px;border-radius:11px;cursor:pointer;
+    background:var(--card);color:var(--fg);border:1px solid var(--line);flex:1;min-width:130px}
+  button:active{transform:scale(.98)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+  button:disabled{opacity:.5}
+  pre{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px;overflow:auto;font-size:11.5px;max-height:300px;margin:0}
+  .empty{color:var(--muted);font-size:13px;padding:12px 0}
+  footer{margin-top:24px;color:var(--muted);font-size:11.5px;line-height:1.7}
+  code{background:var(--line);padding:1px 5px;border-radius:4px;font-size:11.5px}
+  .row{display:flex;align-items:center;gap:9px}
+  #toast-slot{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 18px);
+    text-align:center;pointer-events:none;font-size:13px}
+  #toast-slot span{display:inline-block;padding:8px 15px;border-radius:999px;
+    background:#000c;color:#fff;backdrop-filter:blur(8px)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">A</div>
+    <div>
+      <h1>aplm123 Root MCP</h1>
+      <div class="sub" id="modinfo">读取模块信息…</div>
+    </div>
+    <div class="pill" id="state">初始化</div>
+  </header>
+
+  <div class="banner" id="warning">
+    本模块在局域网内提供完整 Root 能力。请勿连接不可信 Wi-Fi，也不要把 5322 端口映射到公网。
+  </div>
+
+  <h2>服务</h2>
+  <div class="grid">
+    <div class="card"><p class="label">MCP 地址</p><p class="value sm mono" id="addr">—</p></div>
+    <div class="card"><p class="label">服务状态</p><p class="value" id="svc">—</p></div>
+    <div class="card"><p class="label">运行时长</p><p class="value" id="uptime">—</p></div>
+    <div class="card"><p class="label">工具数量</p><p class="value" id="toolcount">—</p></div>
+  </div>
+
+  <h2>连接池</h2>
+  <div class="grid">
+    <div class="card">
+      <p class="label">普通请求</p>
+      <p class="value" id="shortUse">—</p>
+      <div class="bar"><i id="shortBar" style="width:0"></i></div>
+    </div>
+    <div class="card">
+      <p class="label">流式连接</p>
+      <p class="value" id="streamUse">—</p>
+      <div class="bar"><i id="streamBar" style="width:0"></i></div>
+    </div>
+  </div>
+
+  <h2>模块</h2>
+  <div class="card">
+    <ul class="list">
+      <li><span class="k">模块 ID</span><span class="v" id="mid">—</span></li>
+      <li><span class="k">版本</span><span class="v" id="mver">—</span></li>
+      <li><span class="k">Root 框架</span><span class="v" id="framework">—</span></li>
+      <li><span class="k">工作目录</span><span class="v mono" id="workdir">—</span></li>
+    </ul>
+  </div>
+
+  <h2>操作</h2>
+  <div class="actions">
+    <button class="primary" id="refresh">刷新状态</button>
+    <button id="restart">重启服务</button>
+    <button class="danger" id="stop">停止服务</button>
+  </div>
+  <div class="actions">
+    <button id="logs">查看日志</button>
+    <button id="diag">启动诊断</button>
+    <button id="drop">断开长连接</button>
+  </div>
+
+  <h2>输出</h2>
+  <pre id="out">等待操作…</pre>
+
+  <footer>
+    aplm123 Root MCP · 与原有模块共用服务端<br>
+    本页面由模块通过 KernelSU WebUI 提供，经 <code>exec</code> 桥调用本机命令。
+  </footer>
+</div>
+<div id="toast-slot"></div>
+
+<script>
+"use strict";
+// ---------------------------------------------------------------------------
+// 管理器桥接层
+//
+// WebUI 由 root 管理器用自己的 WebView 打开，通过注入的全局对象执行命令。
+// 各家的对象名与调用约定不完全一致，这里做统一封装：
+//
+//   KernelSU / KernelSU Next / APatch 都把桥挂在 window.ksu 上，
+//   且 exec 是**回调式**而非 Promise：
+//       ksu.exec(command, JSON.stringify(options), callbackName)
+//       结果通过 window[callbackName](errno, stdout, stderr) 回传
+//   （见官方 npm 包 kernelsu 的 index.js 实现）
+//
+// 早期版本这里写成 `await ksu.exec(cmd)`，那是错的：exec 立即返回 undefined，
+// await 拿到 undefined 后读 .stdout 抛异常，页面就始终显示"未运行"。
+//
+// 另外兼容几种可能的注入形态（改版管理器 / Magisk 系），按顺序探测。
+// ---------------------------------------------------------------------------
+
+let callbackCounter = 0;
+
+// 按优先级探测桥对象。返回 {obj, kind} 或 null。
+function detectBridge() {
+  const candidates = [
+    ["window.ksu", () => window.ksu, "ksu"],
+    ["window.KernelSU", () => window.KernelSU, "ksu"],
+    // Magisk 系模块 WebUI 的可能形态
+    ["window.magisk", () => window.magisk, "magisk"],
+    ["window.Magisk", () => window.Magisk, "magisk"],
+    ["window.mm", () => window.mm, "magisk"],
+    // 通用：某些管理器把 exec 直接暴露在 window 上
+    ["window.exec", () => (typeof window.exec === "function" ? window : null), "global"],
+  ];
+  for (const [label, get, kind] of candidates) {
+    let obj = null;
+    try { obj = get(); } catch (e) { obj = null; }
+    if (obj && typeof obj.exec === "function") {
+      return { obj: obj, kind: kind, label: label };
+    }
+  }
+  return null;
+}
+
+let bridge = detectBridge();
+
+// 回调式 exec 的 Promise 封装（与官方 kernelsu 包行为一致）。
+function bridgeExec(command, options) {
+  return new Promise((resolve) => {
+    const name = "aplm_exec_cb_" + Date.now() + "_" + (callbackCounter++);
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      try { delete window[name]; } catch (e) { window[name] = undefined; }
+      resolve(result);
+    };
+    window[name] = (errno, stdout, stderr) => {
+      finish({ errno: typeof errno === "number" ? errno : 0,
+               stdout: stdout == null ? "" : String(stdout),
+               stderr: stderr == null ? "" : String(stderr) });
+    };
+    try {
+      // 官方约定：第三个参数是回调函数名
+      bridge.obj.exec(command, JSON.stringify(options || {}), name);
+    } catch (err) {
+      // 同步抛错（桥不可用）或某些实现返回 Promise，两种都兜住
+      try {
+        const maybe = bridge.obj.exec(command, options || {});
+        if (maybe && typeof maybe.then === "function") {
+          maybe.then((r) => finish({
+            errno: r && typeof r.errno === "number" ? r.errno : 0,
+            stdout: r && r.stdout ? String(r.stdout) : "",
+            stderr: r && r.stderr ? String(r.stderr) : "",
+          })).catch((e2) => finish({ errno: 1, stdout: "", stderr: String(e2) }));
+          return;
+        }
+      } catch (err2) {
+        finish({ errno: 1, stdout: "", stderr: String(err2) });
+        return;
+      }
+      finish({ errno: 1, stdout: "", stderr: String(err) });
+    }
+    // 兜底超时：某些实现既不回调也不抛错时，不让页面永久卡住。
+    setTimeout(() => finish({ errno: 124, stdout: "", stderr: "命令超时（未收到回调）" }), 20000);
+  });
+}
+
+const MODDIR = "/data/adb/modules/aplm123.root.mcp";
+const STATE  = "/data/adb/aplm123-mcp";
+const DAEMON = MODDIR + "/bin/aplm123d";
+
+const $ = (id) => document.getElementById(id);
+function set(id, v) { const el = $(id); if (el) el.textContent = (v === undefined || v === null || v === "") ? "—" : String(v); }
+
+function toast(msg) {
+  const slot = $("toast-slot");
+  slot.innerHTML = "";
+  const span = document.createElement("span");
+  span.textContent = msg;
+  slot.appendChild(span);
+  setTimeout(() => { slot.innerHTML = ""; }, 2200);
+}
+
+// 统一的命令执行：有桥走桥，没桥返回明确错误而不是静默失败。
+async function run(cmd) {
+  if (!bridge) {
+    // 可能在页面加载后才注入，重试一次探测
+    bridge = detectBridge();
+  }
+  if (!bridge) {
+    throw new Error("未检测到管理器注入的命令桥（请在 root 管理器的模块页打开本界面；" +
+      "若想用浏览器访问，请改用 http://<手机IP>:5322/ui）");
+  }
+  const res = await bridgeExec(cmd, {});
+  const out = (res.stdout || "").trim();
+  const err = (res.stderr || "").trim();
+  const errno = typeof res.errno === "number" ? res.errno : 0;
+  if (errno !== 0) {
+    throw new Error(err || out || ("命令失败，errno=" + errno));
+  }
+  return { stdout: out, stderr: err, errno: errno };
+}
+
+// 从 key=value 文本里取字段，避免依赖 jq。
+function field(text, key) {
+  const m = text.match(new RegExp("^" + key + "=(.*)$", "m"));
+  return m ? m[1].trim() : "";
+}
+
+function duration(sec) {
+  const n = Number(sec);
+  if (!isFinite(n) || n < 0) return "—";
+  const s = Math.floor(n);
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  if (d) return d + " 天 " + h + " 小时";
+  if (h) return h + " 小时 " + m + " 分";
+  return m + " 分钟";
+}
+
+function setBar(id, use, limit) {
+  const el = $(id); if (!el) return;
+  const pct = limit > 0 ? Math.min(100, Math.round(use / limit * 100)) : 0;
+  el.style.width = pct + "%";
+  el.className = pct >= 100 ? "bad" : (pct >= 75 ? "warn" : "");
+}
+
+function show(text) { $("out").textContent = text || "(无输出)"; }
+
+function setState(ok, label) {
+  const el = $("state");
+  el.textContent = label;
+  el.className = "pill " + (ok ? "ok" : "bad");
+}
+
+// 读取状态：走 daemon 的 webui-status 子命令。
+// 它不依赖 HTTP 服务，服务没起来时也能给出配置与存活信息。
+async function loadStatus() {
+  try {
+    setState(false, "读取中");
+    const { stdout } = await run(DAEMON + " webui-status 2>&1");
+    let info = {};
+    try { info = JSON.parse(stdout); } catch (e) { info = {}; }
+
+    const running = info.running === true || info.service === "running";
+    set("svc", running ? "运行中" : "未运行");
+    setState(running, running ? "运行中" : "已停止");
+
+    if (info.uptimeSeconds !== undefined) set("uptime", duration(info.uptimeSeconds));
+    if (info.workDir) set("workdir", info.workDir);
+    if (info.rootFramework) set("framework", info.rootFramework);
+    if (info.port) set("addr", "http://" + currentHostHint() + ":" + info.port + "/mcp");
+
+    // 连接池水位
+    const conn = info.connections || {};
+    const shortReq = conn.shortRequests || {};
+    const streams = conn.streams || {};
+    const shortLimit = shortReq.limit || info.maxConnections || 32;
+    const streamLimit = streams.limit || info.maxStreams || 64;
+    set("shortUse", (shortReq.inUse || 0) + " / " + shortLimit);
+    set("streamUse", (streams.inUse || 0) + " / " + streamLimit);
+    setBar("shortBar", shortReq.inUse || 0, shortLimit);
+    setBar("streamBar", streams.inUse || 0, streamLimit);
+
+    // 解释「为什么没在跑」
+    const notes = [];
+    if (info.manuallyStopped) notes.push("已被手动停止（manual-stop 标记存在）");
+    if (info.crashLoopBlocked) notes.push("因连续崩溃被安全暂停（crash-loop.blocked）");
+    if (info.configError) notes.push("配置读取失败：" + info.configError);
+    if (info.service === "stopped" && info.httpError) notes.push("HTTP 未响应：" + info.httpError);
+    if (info.supervisorPid) notes.push("supervisor PID：" + info.supervisorPid);
+
+    show(stdout + (notes.length ? "\n\n【提示】\n- " + notes.join("\n- ") : ""));
+  } catch (err) {
+    setState(false, "读取失败");
+    show(String(err.message || err));
+  }
+}
+
+// 面板里无法直接知道手机 IP，用最近一次解析到的结果做占位。
+let hostHint = "";
+function currentHostHint() { return hostHint || "<手机IP>"; }
+
+async function loadModuleInfo() {
+  try {
+    if (bridge && typeof bridge.moduleInfo === "function") {
+      const raw = bridge.moduleInfo();
+      const info = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (info) {
+        set("mid", info.id);
+        set("mver", info.version);
+        $("modinfo").textContent = (info.name || "aplm123 Root MCP") +
+          (info.version ? " · v" + info.version : "");
+      }
+    }
+    // 从 module.prop 补全（桥不可用时也能读）
+    const { stdout } = await run("cat " + MODDIR + "/module.prop 2>/dev/null");
+    if (stdout) {
+      set("mid", field(stdout, "id") || $("mid").textContent);
+      set("mver", field(stdout, "version") || $("mver").textContent);
+      const name = field(stdout, "name");
+      if (name) $("modinfo").textContent = name + " · v" + field(stdout, "version");
+    }
+  } catch (err) {
+    // 模块信息读不到不影响主流程。
+  }
+}
+
+async function loadNetworkInfo() {
+  try {
+    const { stdout } = await run("ip -4 addr show 2>/dev/null | grep -oE 'inet [0-9.]+' | grep -v 127.0.0.1 | head -1");
+    const m = stdout.match(/inet ([0-9.]+)/);
+    if (m) {
+      hostHint = m[1];
+      set("addr", "http://" + m[1] + ":5322/mcp");
+    } else {
+      set("addr", "http://127.0.0.1:5322/mcp");
+    }
+  } catch (err) {
+    set("addr", "http://<手机IP>:5322/mcp");
+  }
+}
+
+async function loadTools() {
+  try {
+    const { stdout } = await run(DAEMON + " schema 2>/dev/null | grep -c '\"name\"' || true");
+    const n = parseInt(stdout, 10);
+    if (isFinite(n) && n > 0) set("toolcount", n);
+  } catch (err) { /* 忽略 */ }
+}
+
+
+
+
+async function refreshAll() {
+  if (!bridge) {
+    setState(false, "无桥接");
+    const found = [];
+    for (const name of ["ksu", "KernelSU", "magisk", "Magisk", "mm"]) {
+      try { if (window[name]) found.push(name + "(" + typeof window[name] + ")"); } catch (e) {}
+    }
+    show("未检测到管理器的命令桥。\n\n" +
+      "页面检测到的候选对象：" + (found.length ? found.join(", ") : "（无）") + "\n" +
+      "window.exec 类型：" + typeof window.exec + "\n\n" +
+      "请从 root 管理器（KernelSU / KernelSU Next / APatch / Magisk）的模块页打开本界面。\n" +
+      "若想用浏览器访问，请改用 HTTP 面板：http://<手机IP>:5322/ui");
+    return;
+  }
+  await Promise.allSettled([
+    loadModuleInfo(), loadNetworkInfo(), loadTools()
+  ]);
+  await loadStatus();
+  toast("已刷新");
+}
+
+function bind(id, fn) {
+  const el = $(id);
+  if (el) el.addEventListener("click", fn);
+}
+
+bind("refresh", refreshAll);
+
+bind("restart", async () => {
+  if (!confirm("重启 MCP 服务？正在运行的任务会中断。")) return;
+  try {
+    setState(false, "重启中");
+    await run("sh " + MODDIR + "/service.sh 2>&1 || " + DAEMON + " supervisor 2>&1 &");
+    toast("已提交重启请求");
+    show("重启请求已提交。若服务由 supervisor 管理，数秒后自动恢复。");
+    setTimeout(refreshAll, 2500);
+  } catch (err) {
+    show(String(err.message || err));
+  }
+});
+
+bind("stop", async () => {
+  if (!confirm("停止 MCP 服务？\n停止后将无法再通过 5322 端口访问，可在管理器里重新启用模块或重启设备恢复。")) return;
+  try {
+    await run("touch " + STATE + "/manual-stop 2>&1; " +
+              "sh " + MODDIR + "/uninstall.sh >/dev/null 2>&1 || true; " +
+              "pid=$(cat " + STATE + "/run/supervisor.pid 2>/dev/null); " +
+              "[ -n \"$pid\" ] && kill -TERM \"$pid\" 2>/dev/null; echo stopped");
+    toast("已发送停止信号");
+    setState(false, "已停止");
+    show("服务已停止。重新启动：在管理器中禁用再启用模块，或重启设备。");
+  } catch (err) {
+    show(String(err.message || err));
+  }
+});
+
+bind("logs", async () => {
+  try {
+    // 同时给出启动日志与运行日志：启动失败时 supervisor.log 可能根本不存在。
+    const { stdout } = await run(
+      "echo '--- boot.log（启动链路）---'; " +
+      "tail -n 40 " + STATE + "/logs/boot.log 2>/dev/null || echo '(无 boot.log)'; " +
+      "echo; echo '--- supervisor.log（守护进程）---'; " +
+      "tail -n 40 " + STATE + "/logs/supervisor.log 2>/dev/null || echo '(无 supervisor.log)'; " +
+      "echo; echo '--- broker.log / frontend.log ---'; " +
+      "tail -n 15 " + STATE + "/logs/broker.log 2>/dev/null; " +
+      "tail -n 15 " + STATE + "/logs/frontend.log 2>/dev/null");
+    show(stdout || "(暂无日志)");
+  } catch (err) {
+    show(String(err.message || err));
+  }
+});
+
+bind("diag", async () => {
+  try {
+    setState(false, "诊断中");
+    const { stdout } = await run(DAEMON + " start-diagnose 2>&1");
+    show(stdout);
+    // 从结论里推断状态，给用户一个即时判断
+    if (stdout.indexOf('"ready": true') >= 0) {
+      setState(true, "无阻断项");
+    } else if (stdout.indexOf('"ready": false') >= 0) {
+      setState(false, "存在阻断");
+    } else {
+      setState(false, "诊断完成");
+    }
+  } catch (err) {
+    show(String(err.message || err));
+    setState(false, "诊断失败");
+  }
+});
+
+bind("drop", async () => {
+  if (!confirm("断开全部流式长连接？\nMCP 客户端可能需要重连。普通请求不受影响。")) return;
+  try {
+    const { stdout } = await run(
+      "curl -s -X POST --max-time 5 http://127.0.0.1:5322/api/streams " +
+      "|| echo 'curl 不可用或服务未运行'");
+    toast("已请求断开");
+    show(stdout);
+  } catch (err) {
+    show(String(err.message || err));
+  }
+});
+
+// 启动
+refreshAll();
+</script>
+</body>
+</html>

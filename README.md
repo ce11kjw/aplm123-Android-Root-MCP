@@ -1,6 +1,6 @@
-# ZCR521 AI MCP
+# aplm123 Root MCP
 
-ZCR521 是面向 Android 8.0–16（API 26–36）的 Root MCP 服务。它把文件、Shell、应用、Root 模块、系统设置、设备控制、网络、诊断、定时、备份和渐进技能统一暴露为 49 个 MCP 工具，并同时支持：
+aplm123 是面向 Android 8.0–16（API 26–36）的 Root MCP 服务。它把文件、Shell、应用、Root 模块、系统设置、设备控制、网络、诊断、定时、备份和渐进技能统一暴露为 49 个 MCP 工具，并同时支持：
 
 - MCP `2026-07-28` 无会话 Streamable HTTP 与 `server/discover`
 - 旧版 Streamable HTTP `initialize` / `notifications/initialized` / `ping`
@@ -12,7 +12,7 @@ ZCR521 是面向 Android 8.0–16（API 26–36）的 Root MCP 服务。它把�
 
 ## 安装
 
-1. 从 GitHub Releases 下载唯一的正式版资源 `ZCR521-Android-AI-MCP.zip`。
+1. 从 GitHub Releases 下载唯一的正式版资源 `aplm123-Android-Root-MCP.zip`。
 2. 在 Magisk、KernelSU/KernelSU Next 或 APatch 模块管理器中安装。
 3. 重启；服务默认监听 `5322`，状态页为 `http://127.0.0.1:5322/`。
 
@@ -34,7 +34,7 @@ APatch 官方只支持 ARM64，因此本模块仅声明 APatch `arm64-v8a` 兼�
 服务启动后可执行：
 
 ```text
-go run ./cmd/zcr521-smoke --endpoint http://127.0.0.1:5322/mcp
+go run ./cmd/aplm123-smoke --endpoint http://127.0.0.1:5322/mcp
 ```
 
 ## 架构
@@ -47,11 +47,11 @@ flowchart LR
   S["supervisor<br/>崩溃退避与版本回滚"] --> F
   S --> B
   B --> K["渐进技能索引<br/>完成调用脱敏收据"]
-  B --> D["/data/adb/zcr521-mcp"]
-  O --> U["/storage/emulated/0/zcr521AI"]
+  B --> D["/data/adb/aplm123-mcp"]
+  O --> U["/storage/emulated/0/aplm123AI"]
 ```
 
-`zcr521d supervisor` 保持前台并管理另外两个进程。frontend 降权失败时会回退到 Root 以保证可用，但 `/status` 会明确返回安全降级原因。
+`aplm123d supervisor` 保持前台并管理另外两个进程。frontend 降权失败时会回退到 Root 以保证可用，但 `/status` 会明确返回安全降级原因。
 
 ## 构建
 
@@ -83,11 +83,11 @@ export ANDROID_NDK_HOME=/absolute/path/to/android-ndk-r29
 
 ## 数据与卸载
 
-- 内部状态：`/data/adb/zcr521-mcp`
-- 用户数据：`/storage/emulated/0/zcr521AI`
-- MCP 调用收据与技能主副本：`/data/adb/zcr521-mcp/MCP`
-- 自动技能用户侧镜像：`/storage/emulated/0/zcr521AI/MCP/skills`
-- Cookie jar：`/data/adb/zcr521-mcp/network/cookie-jars`
+- 内部状态：`/data/adb/aplm123-mcp`
+- 用户数据：`/storage/emulated/0/aplm123AI`
+- MCP 调用收据与技能主副本：`/data/adb/aplm123-mcp/MCP`
+- 自动技能用户侧镜像：`/storage/emulated/0/aplm123AI/MCP/skills`
+- Cookie jar：`/data/adb/aplm123-mcp/network/cookie-jars`
 
 升级保留内部状态和用户目录。卸载脚本只停止经 PID/命令行验证的本模块进程并删除内部状态；用户目录及其中的自动技能镜像会保留。
 

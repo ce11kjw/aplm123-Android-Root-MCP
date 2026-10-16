@@ -305,6 +305,29 @@ type uiNode struct {
 	Class       string   `xml:"class,attr"`
 	Bounds      string   `xml:"bounds,attr"`
 	Children    []uiNode `xml:"node"`
+
+	// Attrs 捕获完整属性表，供 aplm_ui 读取 clickable / enabled / package 等
+	// 可选字段（--compressed dump 不保证这些属性存在）。
+	Attrs map[string]string `xml:"-"`
+}
+
+// UnmarshalXML 在解析标准属性之外，额外把全部属性存进 Attrs。
+// 这样既保持既有字段的零改动，又能让元素级自动化拿到完整的节点信息。
+func (n *uiNode) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error {
+	type plain uiNode // 避免递归调用自身
+	var raw plain
+	raw.Attrs = make(map[string]string, len(start.Attr))
+	for _, attr := range start.Attr {
+		raw.Attrs[attr.Name.Local] = attr.Value
+	}
+	if err := decoder.DecodeElement(&raw, &start); err != nil {
+		return err
+	}
+	*n = uiNode(raw)
+	if n.Attrs == nil {
+		n.Attrs = map[string]string{}
+	}
+	return nil
 }
 
 func (m *Manager) browserCapture(ctx context.Context, req Request) Result {

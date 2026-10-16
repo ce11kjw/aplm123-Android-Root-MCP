@@ -4,7 +4,7 @@ package model
 
 import "time"
 
-// Result is returned by every ZCR521 tool. Fields intentionally do not use
+// Result is returned by every aplm123 tool. Fields intentionally do not use
 // omitempty: clients can rely on one stable response shape.
 type Result struct {
 	Success        bool           `json:"success"`

@@ -75,7 +75,7 @@ func TestCookieOriginOmitsCredentialPathAndMigratesLegacyRecords(t *testing.T) {
 	if strings.Contains(string(raw), "path-secret") || strings.Contains(string(raw), "query-secret") {
 		t.Fatalf("credential-bearing request path was persisted: %s", raw)
 	}
-	listed := manager.cookieOperation(Request{Tool: "zcr521_network", Args: map[string]any{"jar": "origin-boundary"}}, "cookie_list")
+	listed := manager.cookieOperation(Request{Tool: "aplm_network", Args: map[string]any{"jar": "origin-boundary"}}, "cookie_list")
 	listedRaw, _ := json.Marshal(listed.Data)
 	if !listed.Success || strings.Contains(string(listedRaw), "path-secret") || strings.Contains(string(listedRaw), "query-secret") {
 		t.Fatalf("cookie list exposed credential-bearing origin: %+v", listed)
@@ -123,7 +123,7 @@ func TestHTMLFeedAndWebSocketTools(t *testing.T) {
 	}))
 	defer feedServer.Close()
 	manager := testManager(t)
-	feed := manager.parseFeed(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": feedServer.URL, "maxItems": float64(10)}})
+	feed := manager.parseFeed(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": feedServer.URL, "maxItems": float64(10)}})
 	if !feed.Success || feed.Data.(map[string]any)["format"] != "rss" || feed.Data.(map[string]any)["count"] != 1 {
 		t.Fatalf("feed parse failed: %+v", feed)
 	}
@@ -140,16 +140,16 @@ func TestHTMLFeedAndWebSocketTools(t *testing.T) {
 		}
 	}))
 	defer wsServer.Close()
-	connect := manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": "ws" + strings.TrimPrefix(wsServer.URL, "http")}}, "ws_connect")
+	connect := manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": "ws" + strings.TrimPrefix(wsServer.URL, "http")}}, "ws_connect")
 	if !connect.Success {
 		t.Fatalf("ws connect: %+v", connect)
 	}
 	id := connect.Data.(map[string]any)["connectionId"].(string)
-	send := manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"connectionId": id, "message": "hello"}}, "ws_send")
+	send := manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"connectionId": id, "message": "hello"}}, "ws_send")
 	if !send.Success {
 		t.Fatalf("ws send: %+v", send)
 	}
-	receive := manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"connectionId": id, "timeout": "2s"}}, "ws_receive")
+	receive := manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"connectionId": id, "timeout": "2s"}}, "ws_receive")
 	if !receive.Success {
 		t.Fatalf("ws receive: %+v", receive)
 	}
@@ -157,7 +157,7 @@ func TestHTMLFeedAndWebSocketTools(t *testing.T) {
 	if message.Data != "hello" || message.Type != "text" {
 		t.Fatalf("unexpected ws message: %+v", message)
 	}
-	_ = manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"connectionId": id}}, "ws_close")
+	_ = manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"connectionId": id}}, "ws_close")
 	manager.Close()
 }
 
@@ -284,7 +284,7 @@ func TestCookieJarLimitsAndStrictBooleanArguments(t *testing.T) {
 	if count != 0 {
 		t.Fatalf("rejected cookie changed records: %d", count)
 	}
-	invalid := manager.cookieOperation(Request{Tool: "zcr521_network", Args: map[string]any{"jar": "bounded", "url": "https://example.test/", "name": "sid", "value": "x", "secure": "not-a-bool"}}, "cookie_set")
+	invalid := manager.cookieOperation(Request{Tool: "aplm_network", Args: map[string]any{"jar": "bounded", "url": "https://example.test/", "name": "sid", "value": "x", "secure": "not-a-bool"}}, "cookie_set")
 	if invalid.Success || invalid.Code != "INVALID_ARGUMENT" {
 		t.Fatalf("invalid secure type was silently accepted: %+v", invalid)
 	}
@@ -374,7 +374,7 @@ func TestInvalidResponseCookieDoesNotPoisonRequestsAndClearIsTransactional(t *te
 		t.Fatal(err)
 	}
 	state.path = t.TempDir() // atomic replacement over a directory must fail.
-	cleared := manager.cookieOperation(Request{Tool: "zcr521_network", Args: map[string]any{"jar": "response", "confirmDangerous": true}}, "cookie_clear")
+	cleared := manager.cookieOperation(Request{Tool: "aplm_network", Args: map[string]any{"jar": "response", "confirmDangerous": true}}, "cookie_clear")
 	if cleared.Success || cleared.Code != "COOKIE_WRITE_FAILED" {
 		t.Fatalf("failed clear was reported as success: %+v", cleared)
 	}
@@ -469,12 +469,12 @@ func TestCorruptCookieJarBlocksHTTPAndWebSocketUntilRepaired(t *testing.T) {
 	if httpResult.Success || httpResult.Code != "COOKIE_JAR_UNTRUSTED" || requests.Load() != 0 {
 		t.Fatalf("corrupt jar did not fail closed before HTTP I/O: result=%+v requests=%d", httpResult, requests.Load())
 	}
-	wsResult := manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": "ws" + strings.TrimPrefix(server.URL, "http") + "/ws", "jar": "broken"}}, "ws_connect")
+	wsResult := manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": "ws" + strings.TrimPrefix(server.URL, "http") + "/ws", "jar": "broken"}}, "ws_connect")
 	if wsResult.Success || wsResult.Code != "COOKIE_JAR_UNTRUSTED" || requests.Load() != 0 {
 		t.Fatalf("corrupt jar did not fail closed before WebSocket I/O: result=%+v requests=%d", wsResult, requests.Load())
 	}
 
-	repaired := manager.cookieOperation(Request{Tool: "zcr521_network", Args: map[string]any{"jar": "broken", "confirmDangerous": true}}, "cookie_clear")
+	repaired := manager.cookieOperation(Request{Tool: "aplm_network", Args: map[string]any{"jar": "broken", "confirmDangerous": true}}, "cookie_clear")
 	if !repaired.Success {
 		t.Fatalf("cookie_clear did not repair corrupt jar: %+v", repaired)
 	}
@@ -482,7 +482,7 @@ func TestCorruptCookieJarBlocksHTTPAndWebSocketUntilRepaired(t *testing.T) {
 	if !httpResult.Success || requests.Load() != 1 {
 		t.Fatalf("repaired jar did not restore HTTP: result=%+v requests=%d", httpResult, requests.Load())
 	}
-	wsResult = manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": "ws" + strings.TrimPrefix(server.URL, "http") + "/ws", "jar": "broken"}}, "ws_connect")
+	wsResult = manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": "ws" + strings.TrimPrefix(server.URL, "http") + "/ws", "jar": "broken"}}, "ws_connect")
 	if !wsResult.Success || requests.Load() != 2 {
 		t.Fatalf("repaired jar did not restore WebSocket: result=%+v requests=%d", wsResult, requests.Load())
 	}
@@ -501,7 +501,7 @@ func TestCookieListUsesSerializedBytePagination(t *testing.T) {
 		jar.records = append(jar.records, storedCookie{Origin: "https://example.test/", Name: "cookie-" + strconv.Itoa(index), Value: strings.Repeat("v", 3000), Path: "/"})
 	}
 	jar.mu.Unlock()
-	result := manager.cookieOperation(Request{Tool: "zcr521_network", Args: map[string]any{"jar": "budget", "maxItems": float64(500), "includeValues": true, "confirmSensitive": true}}, "cookie_list")
+	result := manager.cookieOperation(Request{Tool: "aplm_network", Args: map[string]any{"jar": "budget", "maxItems": float64(500), "includeValues": true, "confirmSensitive": true}}, "cookie_list")
 	if !result.Success {
 		t.Fatalf("cookie list failed: %+v", result)
 	}
@@ -514,7 +514,7 @@ func TestCookieListUsesSerializedBytePagination(t *testing.T) {
 func TestCookieListClampsOffsetBeforeNativeIntConversion(t *testing.T) {
 	manager := New(Config{WorkDir: t.TempDir(), StateDir: t.TempDir(), ResultPreviewBytes: 8192})
 	defer manager.Close()
-	result := manager.Execute(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{
+	result := manager.Execute(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{
 		"action": "cookie_list", "jar": "default", "offset": int64(1 << 40), "maxItems": int64(10),
 	}})
 	if !result.Success {
@@ -539,7 +539,7 @@ func TestCookieListAdvancesPastOversizedMetadata(t *testing.T) {
 		{Origin: "https://example.test/", Name: "next", Value: "x", Path: "/"},
 	}
 	jar.mu.Unlock()
-	result := manager.cookieOperation(Request{Tool: "zcr521_network", Args: map[string]any{"jar": "metadata-budget", "maxItems": int64(1)}}, "cookie_list")
+	result := manager.cookieOperation(Request{Tool: "aplm_network", Args: map[string]any{"jar": "metadata-budget", "maxItems": int64(1)}}, "cookie_list")
 	if !result.Success {
 		t.Fatal(result.Error)
 	}
@@ -563,7 +563,7 @@ func TestLegacyCharsetsDecodeForHTMLAndFeed(t *testing.T) {
 	defer htmlServer.Close()
 	manager := testManager(t)
 	defer manager.Close()
-	htmlResult := manager.webExtract(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": htmlServer.URL}})
+	htmlResult := manager.webExtract(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": htmlServer.URL}})
 	if !htmlResult.Success || !strings.Contains(htmlResult.Data.(map[string]any)["text"].(string), "中文") {
 		t.Fatalf("GBK HTML was not decoded: %+v", htmlResult)
 	}
@@ -576,7 +576,7 @@ func TestLegacyCharsetsDecodeForHTMLAndFeed(t *testing.T) {
 		_, _ = w.Write(body)
 	}))
 	defer feedServer.Close()
-	feed := manager.parseFeed(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": feedServer.URL}})
+	feed := manager.parseFeed(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": feedServer.URL}})
 	if !feed.Success || feed.Data.(map[string]any)["title"] != "Café" {
 		t.Fatalf("legacy feed charset was not decoded: %+v", feed)
 	}
@@ -588,7 +588,7 @@ func TestLegacyCharsetsDecodeForHTMLAndFeed(t *testing.T) {
 		_, _ = w.Write(body)
 	}))
 	defer headerOnlyServer.Close()
-	headerOnly := manager.parseFeed(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": headerOnlyServer.URL}})
+	headerOnly := manager.parseFeed(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": headerOnlyServer.URL}})
 	if !headerOnly.Success || headerOnly.Data.(map[string]any)["title"] != "中文" {
 		t.Fatalf("HTTP Content-Type feed charset was ignored: %+v", headerOnly)
 	}
@@ -656,7 +656,7 @@ func TestHTTPAndFeedInlineResultsRespectPreviewBudget(t *testing.T) {
 		_, _ = w.Write([]byte(builder.String()))
 	}))
 	defer feedServer.Close()
-	feed := manager.parseFeed(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": feedServer.URL, "maxItems": float64(200)}})
+	feed := manager.parseFeed(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": feedServer.URL, "maxItems": float64(200)}})
 	if !feed.Success || feed.Data.(map[string]any)["truncated"] != true {
 		t.Fatalf("feed was not budget-truncated: %+v", feed)
 	}
@@ -704,7 +704,7 @@ func TestHTMLAndFeedFinalJSONBudgetWithEscaping(t *testing.T) {
 	defer htmlServer.Close()
 	manager := New(Config{WorkDir: t.TempDir(), StateDir: t.TempDir(), ResultPreviewBytes: 4 << 10})
 	defer manager.Close()
-	htmlResult := manager.webExtract(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": htmlServer.URL + "/" + strings.Repeat("long-path/", 128)}})
+	htmlResult := manager.webExtract(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": htmlServer.URL + "/" + strings.Repeat("long-path/", 128)}})
 	if !htmlResult.Success {
 		t.Fatalf("HTML extract failed: %+v", htmlResult)
 	}
@@ -723,7 +723,7 @@ func TestHTMLAndFeedFinalJSONBudgetWithEscaping(t *testing.T) {
 		_, _ = w.Write([]byte(builder.String()))
 	}))
 	defer feedServer.Close()
-	feedResult := manager.parseFeed(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": feedServer.URL + "/" + strings.Repeat("long-path/", 128), "maxItems": int64(8)}})
+	feedResult := manager.parseFeed(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": feedServer.URL + "/" + strings.Repeat("long-path/", 128), "maxItems": int64(8)}})
 	if !feedResult.Success {
 		t.Fatalf("Feed parse failed: %+v", feedResult)
 	}
@@ -746,7 +746,7 @@ func TestFeedParseErrorIsBoundedAndDoesNotEchoCharset(t *testing.T) {
 	manager := New(Config{WorkDir: t.TempDir(), StateDir: t.TempDir(), ResultPreviewBytes: 4 << 10})
 	defer manager.Close()
 
-	result := manager.parseFeed(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": server.URL}})
+	result := manager.parseFeed(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": server.URL}})
 	if result.Success || result.Code != "PARSE_ERROR" {
 		t.Fatalf("oversized charset label was not rejected safely: %+v", result)
 	}
@@ -773,7 +773,7 @@ func TestFeedStreamingEnforcesMaxItemsDuringDecode(t *testing.T) {
 	defer server.Close()
 	manager := testManager(t)
 	defer manager.Close()
-	result := manager.parseFeed(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": server.URL, "maxItems": int64(2)}})
+	result := manager.parseFeed(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": server.URL, "maxItems": int64(2)}})
 	if !result.Success {
 		t.Fatal(result.Error)
 	}
@@ -796,7 +796,7 @@ func TestWebSocketHandshakeCookiesPersistAndIdleSessionsPrune(t *testing.T) {
 	defer server.Close()
 	root := t.TempDir()
 	manager := New(Config{WorkDir: filepath.Join(root, "work"), StateDir: filepath.Join(root, "state")})
-	connect := manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": "ws" + strings.TrimPrefix(server.URL, "http"), "jar": "ws-auth"}}, "ws_connect")
+	connect := manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": "ws" + strings.TrimPrefix(server.URL, "http"), "jar": "ws-auth"}}, "ws_connect")
 	if !connect.Success {
 		t.Fatalf("ws connect: %+v", connect)
 	}
@@ -808,7 +808,7 @@ func TestWebSocketHandshakeCookiesPersistAndIdleSessionsPrune(t *testing.T) {
 	session.mu.Lock()
 	session.lastActivity = time.Now().Add(-webSocketIdleTTL - time.Minute)
 	session.mu.Unlock()
-	staleSend := manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"connectionId": id, "message": "must-not-send"}}, "ws_send")
+	staleSend := manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"connectionId": id, "message": "must-not-send"}}, "ws_send")
 	if staleSend.Success || staleSend.Code != "NOT_FOUND" {
 		t.Fatalf("expired WebSocket session was reused: %+v", staleSend)
 	}
@@ -818,7 +818,7 @@ func TestWebSocketHandshakeCookiesPersistAndIdleSessionsPrune(t *testing.T) {
 	if exists {
 		t.Fatal("idle WebSocket session was not pruned")
 	}
-	oversized := manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": "ws://example.test/", "maxMessageBytes": float64(1 << 20)}}, "ws_connect")
+	oversized := manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": "ws://example.test/", "maxMessageBytes": float64(1 << 20)}}, "ws_connect")
 	if oversized.Success || oversized.Code != "INVALID_ARGUMENT" {
 		t.Fatalf("WebSocket inline message budget was not enforced: %+v", oversized)
 	}
@@ -869,7 +869,7 @@ func TestWebSocketFinalMessageSurvivesPeerClose(t *testing.T) {
 	defer server.Close()
 	manager := testManager(t)
 	defer manager.Close()
-	connect := manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"url": "ws" + strings.TrimPrefix(server.URL, "http")}}, "ws_connect")
+	connect := manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"url": "ws" + strings.TrimPrefix(server.URL, "http")}}, "ws_connect")
 	if !connect.Success {
 		t.Fatal(connect.Error)
 	}
@@ -889,7 +889,7 @@ func TestWebSocketFinalMessageSurvivesPeerClose(t *testing.T) {
 	if !retained {
 		t.Fatal("closed session with queued final message was removed")
 	}
-	receive := manager.webSocketOperation(context.Background(), Request{Tool: "zcr521_network", Args: map[string]any{"connectionId": id}}, "ws_receive")
+	receive := manager.webSocketOperation(context.Background(), Request{Tool: "aplm_network", Args: map[string]any{"connectionId": id}}, "ws_receive")
 	if !receive.Success {
 		t.Fatalf("queued final message was lost: %+v", receive)
 	}

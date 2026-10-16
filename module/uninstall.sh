@@ -12,14 +12,14 @@ if ! zcr_stop_supervisor; then
 fi
 
 case "$ZCR_INTERNAL_DIR" in
-  /data/adb/zcr521-mcp)
-    rm -rf /data/adb/zcr521-mcp
+  /data/adb/aplm123-mcp)
+    rm -rf /data/adb/aplm123-mcp
     ;;
   *)
     zcr_print "内部目录校验失败，跳过清理"
     ;;
 esac
 
-zcr_print "已停止 ZCR521 服务并清理内部状态"
+zcr_print "已停止 aplm123 服务并清理内部状态"
 zcr_print "已保留用户目录：$ZCR_WORK_DIR"
 exit 0

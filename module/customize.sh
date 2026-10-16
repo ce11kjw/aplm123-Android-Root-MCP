@@ -62,32 +62,31 @@ if [ "$zcr_framework" = "APatch" ] && [ "$zcr_abi" != "arm64-v8a" ]; then
 fi
 
 zcr_source_dir="$MODPATH/bin/$zcr_abi"
-for zcr_name in zcr521d 7zz; do
+for zcr_name in aplm123d 7zz; do
   [ -s "$zcr_source_dir/$zcr_name" ] ||
     zcr_abort "安装包缺少 $zcr_abi/$zcr_name 的真实可执行文件"
 done
 
 zcr_ui "***************************************"
-zcr_ui "  ZCR521 AI MCP"
+zcr_ui "  aplm123 Root MCP"
 zcr_ui "***************************************"
-zcr_ui "- 作者：小骨@Xiaogu_zcr521"
-zcr_ui "- 当前版本：0.02"
+zcr_ui "- 当前版本：0.08"
 zcr_ui "- Root 框架：$zcr_framework"
 zcr_ui "- Android API：$zcr_api"
 zcr_ui "- 处理器架构：$zcr_abi"
 
 zcr_prepare_internal || zcr_abort "无法创建内部状态目录"
 zcr_versions="$ZCR_INTERNAL_DIR/versions"
-zcr_previous="$zcr_versions/previous/zcr521d"
+zcr_previous="$zcr_versions/previous/aplm123d"
 zcr_previous_version=""
 mkdir -p "$zcr_versions/previous" || zcr_abort "无法创建版本回滚目录"
 chmod 0700 "$zcr_versions" "$zcr_versions/previous" 2>/dev/null || true
 
-if [ -s "$MODPATH/bin/zcr521d" ]; then
-  if ! command -v cmp >/dev/null 2>&1 || ! cmp -s "$MODPATH/bin/zcr521d" "$zcr_source_dir/zcr521d"; then
+if [ -s "$MODPATH/bin/aplm123d" ]; then
+  if ! command -v cmp >/dev/null 2>&1 || ! cmp -s "$MODPATH/bin/aplm123d" "$zcr_source_dir/aplm123d"; then
     zcr_previous_tmp="$zcr_previous.new"
-    cp -f "$MODPATH/bin/zcr521d" "$zcr_previous_tmp" ||
-      zcr_abort "保存升级前 zcr521d 失败"
+    cp -f "$MODPATH/bin/aplm123d" "$zcr_previous_tmp" ||
+      zcr_abort "保存升级前 aplm123d 失败"
     chmod 0755 "$zcr_previous_tmp" || zcr_abort "设置回滚二进制权限失败"
     mv -f "$zcr_previous_tmp" "$zcr_previous" ||
       zcr_abort "提交回滚二进制失败"
@@ -98,7 +97,7 @@ if [ -s "$MODPATH/bin/zcr521d" ]; then
 fi
 
 mkdir -p "$MODPATH/bin" || zcr_abort "无法创建程序目录"
-for zcr_name in zcr521d 7zz; do
+for zcr_name in aplm123d 7zz; do
   zcr_tmp="$MODPATH/bin/$zcr_name.new"
   cp -f "$zcr_source_dir/$zcr_name" "$zcr_tmp" ||
     zcr_abort "复制 $zcr_name 失败"
@@ -125,7 +124,7 @@ for zcr_script in \
     chmod 0755 "$MODPATH/$zcr_script" 2>/dev/null || true
   fi
 done
-chmod 0755 "$MODPATH/bin/zcr521d" "$MODPATH/bin/7zz" 2>/dev/null || true
+chmod 0755 "$MODPATH/bin/aplm123d" "$MODPATH/bin/7zz" 2>/dev/null || true
 
 zcr_candidate_version="$(sed -n 's/^version=//p' "$MODPATH/module.prop" | head -n 1)"
 zcr_candidate_started="$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || printf '1970-01-01T00:00:00Z')"
@@ -133,9 +132,9 @@ zcr_state_tmp="$zcr_versions/state.json.new"
 cat > "$zcr_state_tmp" <<EOF
 {
   "activeVersion": "",
-  "activeBinary": "$MODPATH/bin/zcr521d",
+  "activeBinary": "$MODPATH/bin/aplm123d",
   "candidateVersion": "$zcr_candidate_version",
-  "candidateBinary": "$MODPATH/bin/zcr521d",
+  "candidateBinary": "$MODPATH/bin/aplm123d",
   "previousVersion": "$zcr_previous_version",
   "previousBinary": "$([ -s "$zcr_previous" ] && printf '%s' "$zcr_previous")",
   "candidateStarted": "$zcr_candidate_started"
@@ -152,9 +151,6 @@ printf '%s\n' "$zcr_abi" > "$ZCR_INTERNAL_DIR/installed-abi"
 chmod 0600 "$ZCR_INTERNAL_DIR/installed-framework" "$ZCR_INTERNAL_DIR/installed-abi" 2>/dev/null || true
 
 zcr_ui "- 默认端口：5322"
-zcr_ui "- 工作目录：/storage/emulated/0/zcr521AI"
-zcr_ui "- MCP 地址文件：/data/adb/zcr521-mcp/MCP地址.txt"
+zcr_ui "- 工作目录：/storage/emulated/0/aplm123AI"
+zcr_ui "- MCP 地址文件：/data/adb/aplm123-mcp/MCP地址.txt"
 zcr_ui "- 安装完成，请重启设备"
-
-am start --user 0 -a android.intent.action.VIEW \
-  -d "tg://resolve?domain=Xiaogu_zcr521" >/dev/null 2>&1 || true

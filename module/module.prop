@@ -1,6 +1,6 @@
-id=zcr521.android.mcp
-name=ZCR521 AI MCP
-version=0.02
-versionCode=2
-author=小骨@Xiaogu_zcr521
-description=通用 root MCP扩展 （让AI管理手机）
+id=aplm123.root.mcp
+name=aplm123 Root MCP
+version=0.08
+versionCode=2026092505
+author=@aplm123
+description=通用 root MCP 扩展，内置管理器 WebUI 与浏览器控制台（让AI管理手机）

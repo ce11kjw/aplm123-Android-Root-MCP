@@ -26,8 +26,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/zcr521/android-ai-mcp/internal/atomicfile"
-	"github.com/zcr521/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/atomicfile"
+	"github.com/aplm123/android-ai-mcp/internal/model"
 )
 
 const (
@@ -44,7 +44,7 @@ const (
 	maxForgetStateBytes           = 1 << 20
 	maxReceiptFileBytes           = 128 << 10
 	maxLearnedArtifactTypes       = 16
-	knowledgeStateMarker          = "ZCR521-KNOWLEDGE-STATE-V1\n"
+	knowledgeStateMarker          = "aplm123-KNOWLEDGE-STATE-V1\n"
 )
 
 var safeIdentifier = regexp.MustCompile(`^[a-z0-9_][a-z0-9_.-]{0,95}$`)
@@ -197,10 +197,10 @@ func New(stateDir, workDir string) *Store {
 
 var builtinTriggerCatalog = map[string][]string{
 	"builtin/android-web-automation": {
-		"zcr521_network", "web_extract", "browser_capture", "feed_parse", "cookie", "websocket", "rss", "atom", "网页截图", "内容提取",
+		"aplm_network", "web_extract", "browser_capture", "feed_parse", "cookie", "websocket", "rss", "atom", "网页截图", "内容提取",
 	},
 	"builtin/mcp-efficient-workflow": {
-		"zcr521_status", "zcr521_config", "zcr521_task", "zcr521_transfer_upload", "zcr521_transfer_export", "zcr521_download", "zcr521_archive", "zcr521_backup", "zcr521_schedule", "zcr521_log", "zcr521_diagnostics", "zcr521_fs_info", "zcr521_fs_read", "zcr521_fs_write", "zcr521_fs_manage", "zcr521_fs_search", "zcr521_fs_hash", "zcr521_shell", "zcr521_script", "mcp", "token", "后台任务", "渐进加载",
+		"aplm_status", "aplm_config", "aplm_task", "aplm_transfer_upload", "aplm_transfer_export", "aplm_download", "aplm_archive", "aplm_backup", "aplm_schedule", "aplm_log", "aplm_diagnostics", "aplm_fs_info", "aplm_fs_read", "aplm_fs_write", "aplm_fs_manage", "aplm_fs_search", "aplm_fs_hash", "aplm_shell", "aplm_script", "mcp", "token", "后台任务", "渐进加载",
 	},
 }
 
@@ -552,7 +552,7 @@ func (s *Store) Match(query string, limit int) []Match {
 				score += 12
 			} else if _, exists := termSet[trigger]; exists {
 				score += 7
-			} else if strings.HasPrefix(trigger, "zcr521_") && strings.Contains(query, trigger) {
+			} else if strings.HasPrefix(trigger, "aplm_") && strings.Contains(query, trigger) {
 				score += 10
 			}
 		}
@@ -708,7 +708,7 @@ func (s *Store) CompletionResult(taskID string) (model.Result, bool) {
 		return result, true
 	}
 	if s.ledgerCorrupt {
-		result := model.Failure("COMPLETION_LEDGER_UNTRUSTED", "任务完成账本校验失败；为防止重复执行，未自动重试", "RecoveredCompletion", "请检查 zcr521_skill.stats.lastPersistenceError，读回目标状态后再显式提交新任务")
+		result := model.Failure("COMPLETION_LEDGER_UNTRUSTED", "任务完成账本校验失败；为防止重复执行，未自动重试", "RecoveredCompletion", "请检查 aplm_skill.stats.lastPersistenceError，读回目标状态后再显式提交新任务")
 		result.TaskID = taskID
 		result.Strategy = "completion_ledger_fail_closed"
 		return result, true

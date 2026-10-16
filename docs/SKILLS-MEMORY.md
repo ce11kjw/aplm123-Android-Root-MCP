@@ -9,8 +9,8 @@
 | 层级 | 内容 | 何时返回 | 上限 |
 |---|---|---|---|
 | 自动提示 | `id/title/summary/source/score` | MCP 初始化指令要求任务开始时先匹配；普通工具也自动匹配并写入 `_meta.skillHints` | 最多 3 条 |
-| 技能索引 | `id/title/summary/source/updatedAt` | 显式调用 `zcr521_skill.list` | 默认 20，最大 100，支持 `offset/nextOffset` |
-| 完整正文 | 单个 `SKILL.md` | 显式调用 `zcr521_skill.get` | 每次一个 |
+| 技能索引 | `id/title/summary/source/updatedAt` | 显式调用 `aplm_skill.list` | 默认 20，最大 100，支持 `offset/nextOffset` |
+| 完整正文 | 单个 `SKILL.md` | 显式调用 `aplm_skill.get` | 每次一个 |
 
 两个内置技能（Android 网页与屏幕自动化、低 Token MCP 工作流）通过 Go `embed` 编入二进制。启动时只建立轻量索引；匹配优先使用明确的工具名、action 和内置触发目录，再用中英文词元辅助排序。精确工具/action 的权重高于普通关键词，避免“网络”“系统”等宽泛词把无关技能排在前面。
 
@@ -18,8 +18,8 @@
 
 同步调用只有在工具得到真实结果后才提交记忆。后台调用返回 `TASK_ACCEPTED` 时不学习；任务真正进入 `succeeded/failed/cancelled/timed_out` 等终态并已持久化后，完成钩子才写收据。以下控制面调用不会形成经验：
 
-- `zcr521_skill`、`zcr521_task`、`zcr521_status`；
-- `zcr521_capabilities.get`、`zcr521_config.get`；
+- `aplm_skill`、`aplm_task`、`aplm_status`；
+- `aplm_capabilities.get`、`aplm_config.get`；
 - 仅表示排队成功的 `TASK_ACCEPTED`。
 
 这样能避免高频轮询把真正的执行经验淹没，也减少索引、磁盘和 Token 增长。
@@ -56,7 +56,7 @@
 - 失败类别计数、是否需要重启、产物类型；
 - 适用条件、执行步骤与下一次调用的验证规则。
 
-权威副本在 `/data/adb/zcr521-mcp/MCP/skills/learned`，用户可见镜像在 `/storage/emulated/0/zcr521AI/MCP/skills/learned`。内部写入成功而镜像暂时不可用时，权威结果保留，后续启动或写入会修复镜像；`stats.lastPersistenceError` 暴露最近持久化问题。
+权威副本在 `/data/adb/aplm123-mcp/MCP/skills/learned`，用户可见镜像在 `/storage/emulated/0/aplm123AI/MCP/skills/learned`。内部写入成功而镜像暂时不可用时，权威结果保留，后续启动或写入会修复镜像；`stats.lastPersistenceError` 暴露最近持久化问题。
 
 ## 后台任务防重放
 
@@ -85,8 +85,8 @@
 
 ## 遗忘语义
 
-`zcr521_skill.forget` 只允许删除 `learned/` 技能，并要求 `confirmDangerous=true`。删除顺序先原子递增并持久化 generation tombstone，再移除索引、内部正文和镜像。旧收据仍可用于审计和任务防重放，但其代次不匹配，哪怕时间戳来自未来也不会在重启后复活技能；同一 tool/action 之后的新完成记录使用新代次并从零统计。
+`aplm_skill.forget` 只允许删除 `learned/` 技能，并要求 `confirmDangerous=true`。删除顺序先原子递增并持久化 generation tombstone，再移除索引、内部正文和镜像。旧收据仍可用于审计和任务防重放，但其代次不匹配，哪怕时间戳来自未来也不会在重启后复活技能；同一 tool/action 之后的新完成记录使用新代次并从零统计。
 
 ## 运维检查
 
-调用 `zcr521_skill.stats` 可检查：内置/自动技能数、保留收据数和字节数、保留阈值、权威目录、镜像目录、完成账本可信状态及最近持久化错误。若 `completionLedgerTrusted=false`，先备份内部状态并检查存储损坏；不要删除任务快照后盲目重跑破坏性操作。
+调用 `aplm_skill.stats` 可检查：内置/自动技能数、保留收据数和字节数、保留阈值、权威目录、镜像目录、完成账本可信状态及最近持久化错误。若 `completionLedgerTrusted=false`，先备份内部状态并检查存储损坏；不要删除任务快照后盲目重跑破坏性操作。

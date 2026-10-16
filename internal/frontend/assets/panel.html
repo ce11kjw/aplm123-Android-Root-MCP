@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>aplm123 Root MCP · 控制台</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#262b36; --fg:#e6e9ef;
+    --muted:#98a2b3; --accent:#4f8cff; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+  }
+  @media (prefers-color-scheme: light){
+    :root{--bg:#f6f7f9;--card:#fff;--line:#e4e7ec;--fg:#1a1d23;--muted:#667085;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans SC",sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:20px 16px 48px}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .mark{width:38px;height:38px;border-radius:10px;background:var(--accent);color:#fff;
+    display:grid;place-items:center;font-weight:700;font-size:19px;flex:none}
+  h1{font-size:18px;margin:0}
+  .sub{color:var(--muted);font-size:12px;margin-top:2px}
+  .pill{margin-left:auto;padding:5px 11px;border-radius:999px;font-size:12px;
+    background:var(--card);border:1px solid var(--line);white-space:nowrap}
+  .pill.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+  .pill.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+  .banner{margin:14px 0;padding:11px 13px;border-radius:10px;font-size:12.5px;
+    background:color-mix(in srgb,var(--warn) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);color:var(--fg)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:11px;margin:14px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px}
+  .label{color:var(--muted);font-size:11.5px;letter-spacing:.02em;margin:0 0 5px}
+  .value{font-size:19px;font-weight:650;margin:0;word-break:break-all}
+  .value.sm{font-size:13.5px;font-weight:500}
+  h2{font-size:14px;margin:22px 0 9px;display:flex;align-items:center;gap:8px}
+  h2 .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+  .bar{height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:7px}
+  .bar > i{display:block;height:100%;background:var(--accent);transition:width .3s}
+  .bar > i.warn{background:var(--warn)}
+  .bar > i.bad{background:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:500;font-size:11.5px}
+  td.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:11.5px;word-break:break-all}
+  .empty{color:var(--muted);padding:14px 9px;font-size:12.5px}
+  button{font:inherit;padding:8px 14px;border-radius:9px;cursor:pointer;
+    background:var(--card);color:var(--fg);border:1px solid var(--line)}
+  button:hover{border-color:var(--accent)}
+  button.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+  .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  #toast{margin-left:auto;font-size:12px;color:var(--muted)}
+  footer{margin-top:26px;color:var(--muted);font-size:11.5px;display:flex;gap:12px;flex-wrap:wrap}
+  code{background:var(--line);padding:1px 5px;border-radius:4px;font-size:11.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">A</div>
+    <div>
+      <h1>aplm123 Root MCP</h1>
+      <div class="sub">设备控制台 · 只读视图</div>
+    </div>
+    <div class="pill" id="state">读取中</div>
+  </header>
+
+  <div class="banner" id="warning"></div>
+
+  <div class="grid">
+    <div class="card"><p class="label">MCP 地址</p><p class="value sm" id="addr">—</p></div>
+    <div class="card"><p class="label">版本</p><p class="value" id="version">—</p></div>
+    <div class="card"><p class="label">运行时长</p><p class="value" id="uptime">—</p></div>
+    <div class="card"><p class="label">Root</p><p class="value" id="root">—</p></div>
+    <div class="card"><p class="label">Root 框架</p><p class="value" id="framework">—</p></div>
+    <div class="card"><p class="label">任务数</p><p class="value" id="tasks">—</p></div>
+  </div>
+
+  <h2>连接池 <span class="hint">过载时短请求与长连接分开计数</span></h2>
+  <div class="grid">
+    <div class="card">
+      <p class="label">普通请求占用</p>
+      <p class="value" id="shortUse">—</p>
+      <div class="bar"><i id="shortBar" style="width:0"></i></div>
+    </div>
+    <div class="card">
+      <p class="label">流式连接占用</p>
+      <p class="value" id="streamUse">—</p>
+      <div class="bar"><i id="streamBar" style="width:0"></i></div>
+    </div>
+    <div class="card">
+      <p class="label">工作目录</p>
+      <p class="value sm" id="workdir">—</p>
+    </div>
+  </div>
+
+  <h2>挂起的长连接 <span class="hint">关闭它们即可释放流配额，无需重启</span></h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>路径</th><th>来源</th><th>已持续</th><th>协议</th></tr></thead>
+      <tbody id="streams"><tr><td colspan="4" class="empty">读取中…</td></tr></tbody>
+    </table>
+    <div class="row">
+      <button class="danger" id="drop">断开全部长连接</button>
+      <span id="toast"></span>
+    </div>
+  </div>
+
+  <footer>
+    <span>aplm123 Root MCP · 与原有模块共用服务端</span>
+    <span>本面板免占连接配额，过载时仍可访问</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var byId=function(id){return document.getElementById(id)};
+  var timer=null, busy=false;
+
+  function text(id,v){var el=byId(id); if(el) el.textContent=(v===undefined||v===null||v==="")?"—":String(v);}
+
+  function duration(sec){
+    if(typeof sec!=="number"||!isFinite(sec)||sec<0) return "—";
+    sec=Math.floor(sec);
+    var d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);
+    if(d) return d+" 天 "+h+" 小时";
+    if(h) return h+" 小时 "+m+" 分";
+    return m+" 分钟";
+  }
+
+  function bar(id,use,limit){
+    var el=byId(id); if(!el) return;
+    var pct=limit>0?Math.min(100,Math.round(use/limit*100)):0;
+    el.style.width=pct+"%";
+    el.className = pct>=100?"bad":(pct>=75?"warn":"");
+  }
+
+  function renderSummary(s){
+    var st=byId("state");
+    st.textContent = s.service==="running" ? "运行中" : (s.brokerError ? "broker 不可用" : String(s.service||"—"));
+    st.className = "pill " + (s.service==="running" ? "ok" : "bad");
+    text("warning", s.securityWarning||"");
+    text("addr", s.mcpAddress);
+    text("version", s.version);
+    text("uptime", duration(s.uptimeSeconds));
+    text("workdir", s.workDir);
+    text("root", s.rootAvailable===true?"可用":(s.rootAvailable===false?"不可用":"—"));
+    text("framework", s.rootFramework);
+    text("tasks", s.taskCount);
+    var c=s.connections||{};
+    var sh=c.shortRequests||{}, sm=c.streams||{};
+    text("shortUse", (sh.inUse||0)+" / "+(sh.limit||0));
+    text("streamUse", (sm.inUse||0)+" / "+(sm.limit||0));
+    bar("shortBar", sh.inUse||0, sh.limit||0);
+    bar("streamBar", sm.inUse||0, sm.limit||0);
+  }
+
+  function renderStreams(d){
+    var body=byId("streams");
+    var list=(d&&d.streams)||[];
+    if(!list.length){
+      body.innerHTML='<tr><td colspan="4" class="empty">当前没有挂起的长连接</td></tr>';
+      return;
+    }
+    var html="";
+    for(var i=0;i<list.length;i++){
+      var s=list[i];
+      html+="<tr><td class=\"mono\">"+escapeHtml(s.method+" "+s.path)+"</td>"+
+            "<td class=\"mono\">"+escapeHtml(s.remoteAddr||"—")+"</td>"+
+            "<td>"+duration(s.ageSeconds)+"</td>"+
+            "<td class=\"mono\">"+escapeHtml(s.protocol||"—")+"</td></tr>";
+    }
+    body.innerHTML=html;
+  }
+
+  function escapeHtml(v){
+    return String(v==null?"":v).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function fail(err){
+    var st=byId("state");
+    st.textContent="连接失败"; st.className="pill bad";
+    byId("streams").innerHTML='<tr><td colspan="4" class="empty">'+
+      escapeHtml(err&&err.message?err.message:String(err))+'</td></tr>';
+  }
+
+  function refresh(){
+    if(busy) return;
+    busy=true;
+    Promise.all([
+      fetch("/api/ui",{cache:"no-store"}).then(function(r){return r.json()}),
+      fetch("/api/streams",{cache:"no-store"}).then(function(r){return r.json()})
+    ]).then(function(res){
+      renderSummary(res[0]||{});
+      renderStreams(res[1]||{});
+    }).catch(fail).then(function(){busy=false});
+  }
+
+  byId("drop").addEventListener("click",function(){
+    if(!confirm("断开全部已登记的长连接？\n普通请求配额不受影响，MCP 客户端可能需要重连。")) return;
+    var toast=byId("toast"); toast.textContent="处理中…";
+    fetch("/api/streams",{method:"POST",cache:"no-store"})
+      .then(function(r){return r.json()})
+      .then(function(d){
+        toast.textContent="已断开 "+(d.dropped||0)+" 条连接";
+        setTimeout(refresh,400);
+      })
+      .catch(function(e){toast.textContent="失败："+e.message});
+  });
+
+  // 页面可见时才刷新，避免后台标签页持续占用连接。
+  function start(){stop(); timer=setInterval(function(){ if(!document.hidden) refresh(); },5000); }
+  function stop(){ if(timer){clearInterval(timer); timer=null;} }
+  document.addEventListener("visibilitychange",function(){ document.hidden?stop():start(); });
+
+  refresh(); start();
+})();
+</script>
+</body>
+</html>

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/buildinfo"
-	"github.com/zcr521/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
+	"github.com/aplm123/android-ai-mcp/internal/model"
 )
 
 type fakeTasks struct {
@@ -184,14 +184,14 @@ func TestBackgroundToolCallReturnsDurableTaskHandle(t *testing.T) {
 		Caller: fakeTaskCaller{result: accepted},
 	}
 	params := map[string]any{
-		"name": "zcr521_fs_hash",
+		"name": "aplm_fs_hash",
 		"arguments": map[string]any{
 			"action":     "calculate",
 			"path":       "sample.txt",
 			"background": true,
 		},
 	}
-	request := currentTaskRequest(t, "tools/call", params, "zcr521_fs_hash")
+	request := currentTaskRequest(t, "tools/call", params, "aplm_fs_hash")
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	if response.Code != http.StatusOK ||

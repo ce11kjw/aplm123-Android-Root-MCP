@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/buildinfo"
-	"github.com/zcr521/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
+	"github.com/aplm123/android-ai-mcp/internal/model"
 )
 
 const (
@@ -199,13 +199,13 @@ func (h TasksHandler) dispatch(
 				err = errors.New("inputResponses must be an object")
 				break
 			}
-			// ZCR521 tasks do not currently enter input_required. Unknown or
+			// aplm123 tasks do not currently enter input_required. Unknown or
 			// already-satisfied response keys are therefore ignored, while the
 			// task ID itself is still checked.
 			_, err = h.Client.TaskGet(ctx, taskID)
 		} else {
 			// Retain the documented progress/message compatibility shape for
-			// existing ZCR521 clients.
+			// existing aplm123 clients.
 			progress, progressErr := jsonNumber(params["progress"])
 			if progressErr != nil {
 				err = progressErr
@@ -619,7 +619,7 @@ func completeResult(value map[string]any) map[string]any {
 		meta = map[string]any{}
 	}
 	meta[metaServerInfo] = map[string]any{
-		"name":    "zcr521-android-mcp",
+		"name":    "aplm123-android-mcp",
 		"version": buildinfo.Version,
 	}
 	value["_meta"] = meta

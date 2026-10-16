@@ -23,7 +23,7 @@ func (m *Manager) publicShellOperation(ctx context.Context, req Request) Result 
 	case "execute_many", "run_many":
 		req.Tool = "shell_execute_many"
 	default:
-		return invalidAction("zcr521_shell", action, "exec", "execute", "execute_many", "run", "run_many")
+		return invalidAction("aplm_shell", action, "exec", "execute", "execute_many", "run", "run_many")
 	}
 	return m.shellOperation(ctx, req)
 }
@@ -60,7 +60,7 @@ func (m *Manager) publicScriptOperation(ctx context.Context, req Request) Result
 		return m.runCommand(ctx, commandSpec{Name: program, Args: []string{"-n", "-c", script}, Dir: m.cfg.WorkDir, Timeout: m.cfg.ShellTimeout, Strategy: "shell_parse"})
 	}
 	if action != "execute" && action != "run" {
-		return invalidAction("zcr521_script", action, "execute", "run", "validate")
+		return invalidAction("aplm_script", action, "execute", "run", "validate")
 	}
 	req.Tool = "shell_script"
 	return m.shellOperation(ctx, req)
@@ -89,7 +89,7 @@ func (m *Manager) publicTaskOperation(req Request) Result {
 	case "artifacts":
 		req.Tool = "task_artifacts"
 	default:
-		return invalidAction("zcr521_task", action, "artifacts", "cancel", "clear", "get", "list", "logs", "output", "status", "update")
+		return invalidAction("aplm_task", action, "artifacts", "cancel", "clear", "get", "list", "logs", "output", "status", "update")
 	}
 	return m.taskOperation(req)
 }

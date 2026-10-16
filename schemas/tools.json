@@ -3,11 +3,11 @@
   "protocol": "2026-07-28",
   "tools": [
     {
-      "name": "zcr521_accessibility",
+      "name": "aplm_accessibility",
       "title": "无障碍服务",
       "description": "列出、读取、启用或禁用无障碍服务。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_accessibility.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_accessibility.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -165,11 +165,11 @@
       }
     },
     {
-      "name": "zcr521_app_export",
+      "name": "aplm_app_export",
       "title": "导出应用",
       "description": "导出 APK、Split 或应用包。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_app_export.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_app_export.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -329,11 +329,11 @@
       }
     },
     {
-      "name": "zcr521_app_info",
+      "name": "aplm_app_info",
       "title": "应用信息",
       "description": "按显示名、包名或组件读取应用、组件与权限详情。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_app_info.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_app_info.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -642,11 +642,11 @@
       }
     },
     {
-      "name": "zcr521_app_install",
+      "name": "aplm_app_install",
       "title": "安装应用",
       "description": "通过 Package Manager session 安装 APK/Split/APKS/XAPK。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_app_install.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_app_install.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -878,11 +878,11 @@
       }
     },
     {
-      "name": "zcr521_app_list",
+      "name": "aplm_app_list",
       "title": "应用列表",
       "description": "按显示名或包名查询普通、系统或指定用户应用。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_app_list.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_app_list.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -1030,11 +1030,11 @@
       }
     },
     {
-      "name": "zcr521_app_manage",
+      "name": "aplm_app_manage",
       "title": "管理应用",
       "description": "按显示名、包名或组件启动应用，并管理精确包名对应的应用。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_app_manage.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_app_manage.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -1514,11 +1514,11 @@
       }
     },
     {
-      "name": "zcr521_app_permission",
+      "name": "aplm_app_permission",
       "title": "应用权限",
       "description": "列出、授予、撤销权限或管理 AppOps。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_app_permission.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_app_permission.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -1684,11 +1684,11 @@
       }
     },
     {
-      "name": "zcr521_app_policy",
+      "name": "aplm_app_policy",
       "title": "应用策略",
       "description": "管理待机桶、后台与电池优化策略。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_app_policy.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_app_policy.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -1862,11 +1862,11 @@
       }
     },
     {
-      "name": "zcr521_archive",
+      "name": "aplm_archive",
       "title": "压缩归档",
       "description": "创建、解压、列出或校验 ZIP/TAR/GZIP/XZ/7z。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_archive.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_archive.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -2082,11 +2082,11 @@
       }
     },
     {
-      "name": "zcr521_audio",
+      "name": "aplm_audio",
       "title": "音频设置",
       "description": "读取或调整音量、静音与音频路由。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_audio.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_audio.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -2249,11 +2249,11 @@
       }
     },
     {
-      "name": "zcr521_backup",
+      "name": "aplm_backup",
       "title": "备份恢复",
       "description": "创建、列出、验证、恢复或删除备份。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_backup.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_backup.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -2457,11 +2457,11 @@
       }
     },
     {
-      "name": "zcr521_capabilities",
+      "name": "aplm_capabilities",
       "title": "设备能力",
       "description": "读取或重新探测设备能力与降级原因。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_capabilities.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_capabilities.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -2574,11 +2574,190 @@
       }
     },
     {
-      "name": "zcr521_config",
+      "name": "aplm_clipboard",
+      "title": "剪贴板",
+      "description": "读取、写入、清空剪贴板或等待新内容。",
+      "inputSchema": {
+        "$id": "https://aplm123.local/schema/tools/aplm_clipboard.json",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "properties": {
+              "action": {
+                "const": "get"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "get"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "set"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "set"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "clear"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "clear"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "watch"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "watch"
+          }
+        ],
+        "properties": {
+          "action": {
+            "description": "要执行的明确操作。",
+            "enum": [
+              "get",
+              "set",
+              "clear",
+              "watch"
+            ],
+            "type": "string"
+          },
+          "contains": {
+            "description": "仅当剪贴板内容包含该子串时才视为命中。",
+            "type": "string"
+          },
+          "content": {
+            "description": "文本或 Base64 内容。",
+            "type": "string"
+          },
+          "text": {
+            "description": "文本、搜索内容或输入内容。",
+            "type": "string"
+          },
+          "timeout": {
+            "description": "超时秒数或 Go 风格时长。",
+            "oneOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "pattern": "^[0-9]+(?:ms|s|m|h)$",
+                "type": "string"
+              }
+            ]
+          },
+          "timeoutMs": {
+            "description": "超时毫秒数。",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "value": {
+            "description": "设置值；具体类型由 action 决定。",
+            "type": [
+              "string",
+              "integer",
+              "boolean"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "type": "array"
+          },
+          "code": {
+            "type": "string"
+          },
+          "data": {},
+          "durationMs": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "error": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "exitCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "rebootRequired": {
+            "type": "boolean"
+          },
+          "stderr": {
+            "type": "string"
+          },
+          "stdout": {
+            "type": "string"
+          },
+          "strategy": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "taskId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "code",
+          "message",
+          "data",
+          "error",
+          "stdout",
+          "stderr",
+          "exitCode",
+          "durationMs",
+          "taskId",
+          "rebootRequired",
+          "artifacts",
+          "strategy"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "readOnly": false,
+        "idempotent": false,
+        "destructive": true,
+        "heavy": false
+      }
+    },
+    {
+      "name": "aplm_config",
       "title": "服务配置",
       "description": "读取、验证、原子更新、导出或恢复服务配置。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_config.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_config.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -2963,11 +3142,11 @@
       }
     },
     {
-      "name": "zcr521_connectivity",
+      "name": "aplm_connectivity",
       "title": "连接设置",
       "description": "读取或调整 Wi-Fi、移动数据、飞行模式、蓝牙与 NFC。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_connectivity.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_connectivity.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -3150,11 +3329,11 @@
       }
     },
     {
-      "name": "zcr521_default_app",
+      "name": "aplm_default_app",
       "title": "默认应用",
       "description": "读取、设置或清除默认应用。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_default_app.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_default_app.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -3308,11 +3487,11 @@
       }
     },
     {
-      "name": "zcr521_developer",
+      "name": "aplm_developer",
       "title": "开发者设置",
       "description": "读取或调整 ADB、常亮、动画及模拟位置设置。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_developer.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_developer.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -3485,11 +3664,11 @@
       }
     },
     {
-      "name": "zcr521_device_info",
+      "name": "aplm_device_info",
       "title": "设备信息",
       "description": "读取设备、电池、存储与传感器信息。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_device_info.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_device_info.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -3631,11 +3810,11 @@
       }
     },
     {
-      "name": "zcr521_diagnostics",
+      "name": "aplm_diagnostics",
       "title": "系统诊断",
       "description": "执行自检或生成完整诊断报告。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_diagnostics.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_diagnostics.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -3762,11 +3941,11 @@
       }
     },
     {
-      "name": "zcr521_display",
+      "name": "aplm_display",
       "title": "显示设置",
       "description": "读取或调整亮度、尺寸、密度与旋转。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_display.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_display.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -3944,11 +4123,11 @@
       }
     },
     {
-      "name": "zcr521_download",
+      "name": "aplm_download",
       "title": "文件下载",
       "description": "可重试、续传、批量下载及状态/取消。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_download.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_download.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -4175,11 +4354,11 @@
       }
     },
     {
-      "name": "zcr521_fs_hash",
+      "name": "aplm_fs_hash",
       "title": "文件哈希",
       "description": "计算或校验文件哈希。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_fs_hash.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_fs_hash.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -4318,11 +4497,11 @@
       }
     },
     {
-      "name": "zcr521_fs_info",
+      "name": "aplm_fs_info",
       "title": "文件信息",
       "description": "列目录、读取元数据、磁盘与挂载信息。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_fs_info.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_fs_info.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -4464,11 +4643,11 @@
       }
     },
     {
-      "name": "zcr521_fs_manage",
+      "name": "aplm_fs_manage",
       "title": "管理文件",
       "description": "目录、复制、移动、删除、权限、所有者与链接管理。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_fs_manage.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_fs_manage.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -4748,11 +4927,11 @@
       }
     },
     {
-      "name": "zcr521_fs_read",
+      "name": "aplm_fs_read",
       "title": "读取文件",
       "description": "流式读取文本、二进制、行、尾部或资源链接。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_fs_read.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_fs_read.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -4955,11 +5134,11 @@
       }
     },
     {
-      "name": "zcr521_fs_search",
+      "name": "aplm_fs_search",
       "title": "搜索文件",
       "description": "按名称或内容搜索，查找大文件与重复文件。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_fs_search.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_fs_search.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -5169,11 +5348,11 @@
       }
     },
     {
-      "name": "zcr521_fs_write",
+      "name": "aplm_fs_write",
       "title": "写入文件",
       "description": "创建、追加、截断、补丁写入或更新时间戳。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_fs_write.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_fs_write.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -5366,11 +5545,11 @@
       }
     },
     {
-      "name": "zcr521_input",
+      "name": "aplm_input",
       "title": "输入控制",
       "description": "点击、滑动、输入文本、按键与状态栏操作。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_input.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_input.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -5583,11 +5762,11 @@
       }
     },
     {
-      "name": "zcr521_input_method",
+      "name": "aplm_input_method",
       "title": "输入法管理",
       "description": "列出、读取、选择、启用或禁用输入法。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_input_method.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_input_method.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -5757,11 +5936,11 @@
       }
     },
     {
-      "name": "zcr521_locale_time",
+      "name": "aplm_locale_time",
       "title": "语言与时间",
       "description": "读取或调整语言区域、时区与时间格式。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_locale_time.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_locale_time.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -5918,11 +6097,11 @@
       }
     },
     {
-      "name": "zcr521_log",
+      "name": "aplm_log",
       "title": "日志读取",
       "description": "读取 Logcat、内核、dmesg、模块/MCP 日志或实时流。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_log.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_log.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -6136,11 +6315,11 @@
       }
     },
     {
-      "name": "zcr521_network",
+      "name": "aplm_network",
       "title": "网络工具",
       "description": "网络诊断、持久 HTTP/Cookie、HTML/浏览器捕获、RSS/Atom 与 WebSocket。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_network.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_network.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -6807,11 +6986,11 @@
       }
     },
     {
-      "name": "zcr521_notification",
+      "name": "aplm_notification",
       "title": "通知管理",
       "description": "读取或调整通知与监听器权限。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_notification.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_notification.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -6977,11 +7156,11 @@
       }
     },
     {
-      "name": "zcr521_power",
+      "name": "aplm_power",
       "title": "电源控制",
       "description": "重启到系统/Recovery/Bootloader/Fastbootd 或关机。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_power.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_power.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -7151,11 +7330,11 @@
       }
     },
     {
-      "name": "zcr521_process",
+      "name": "aplm_process",
       "title": "进程管理",
       "description": "列出或检查进程，发送信号、调整优先级、查看 fd。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_process.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_process.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -7353,11 +7532,11 @@
       }
     },
     {
-      "name": "zcr521_property",
+      "name": "aplm_property",
       "title": "系统属性",
       "description": "读取、列出、设置或恢复 Android 属性。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_property.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_property.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -7510,11 +7689,11 @@
       }
     },
     {
-      "name": "zcr521_root_info",
+      "name": "aplm_root_info",
       "title": "Root 信息",
       "description": "检测 Root 框架、能力与运行时自检。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_root_info.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_root_info.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -7639,11 +7818,11 @@
       }
     },
     {
-      "name": "zcr521_root_module",
+      "name": "aplm_root_module",
       "title": "Root 模块",
       "description": "管理 Magisk、KernelSU 或 APatch 模块生命周期。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_root_module.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_root_module.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -7938,11 +8117,11 @@
       }
     },
     {
-      "name": "zcr521_schedule",
+      "name": "aplm_schedule",
       "title": "定时任务",
       "description": "管理一次、周期、Cron 及事件触发任务。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_schedule.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_schedule.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -8203,11 +8382,11 @@
       }
     },
     {
-      "name": "zcr521_screen",
+      "name": "aplm_screen",
       "title": "屏幕工具",
       "description": "截图、录屏、前台 Activity、唤醒或休眠。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_screen.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_screen.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -8385,11 +8564,11 @@
       }
     },
     {
-      "name": "zcr521_script",
+      "name": "aplm_script",
       "title": "执行脚本",
       "description": "验证或执行多行脚本。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_script.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_script.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -8591,11 +8770,11 @@
       }
     },
     {
-      "name": "zcr521_service",
+      "name": "aplm_service",
       "title": "系统服务",
       "description": "分型管理 Binder、应用 Service 与 init 服务。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_service.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_service.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -8853,11 +9032,11 @@
       }
     },
     {
-      "name": "zcr521_setting",
+      "name": "aplm_setting",
       "title": "系统设置",
       "description": "读取、列出、写入或删除 Android Settings。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_setting.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_setting.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -9037,11 +9216,252 @@
       }
     },
     {
-      "name": "zcr521_shell",
+      "name": "aplm_share",
+      "title": "打开与分享",
+      "description": "用系统程序打开、分享文件或链接，以及调起 APK 安装。",
+      "inputSchema": {
+        "$id": "https://aplm123.local/schema/tools/aplm_share.json",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "properties": {
+              "action": {
+                "const": "view"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "view"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "share"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "share"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "open_url"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "open_url"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "install"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "install"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "resolve"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "resolve"
+          }
+        ],
+        "properties": {
+          "action": {
+            "description": "要执行的明确操作。",
+            "enum": [
+              "view",
+              "share",
+              "open_url",
+              "install",
+              "resolve"
+            ],
+            "type": "string"
+          },
+          "file": {
+            "description": "path 的兼容别名。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "link": {
+            "description": "url 的兼容别名。",
+            "type": "string"
+          },
+          "mime": {
+            "description": "MIME 类型；不传时按扩展名推断。",
+            "type": "string"
+          },
+          "package": {
+            "description": "Android 包名。",
+            "type": "string"
+          },
+          "packageName": {
+            "description": "package 的兼容别名。",
+            "type": "string"
+          },
+          "path": {
+            "description": "文件或目录路径；相对路径基于默认工作目录。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "source": {
+            "description": "源路径或源路径数组。",
+            "oneOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "items": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          },
+          "text": {
+            "description": "文本、搜索内容或输入内容。",
+            "type": "string"
+          },
+          "to": {
+            "description": "package 的兼容别名。",
+            "type": "string"
+          },
+          "type": {
+            "description": "归档、服务、备份或定时任务类型。",
+            "type": "string"
+          },
+          "url": {
+            "description": "HTTP(S) 或 WebSocket URL；具体 action 会进一步限制协议。",
+            "format": "uri",
+            "maxLength": 8192,
+            "pattern": "^(?:https?|wss?)://",
+            "type": "string"
+          },
+          "user": {
+            "description": "Android 用户 ID 或 Shell 身份兼容字段。",
+            "oneOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "minLength": 1,
+                "type": "string"
+              }
+            ]
+          },
+          "userId": {
+            "description": "user 的兼容别名：Android 用户 ID 或 current/all。",
+            "oneOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "minLength": 1,
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "type": "array"
+          },
+          "code": {
+            "type": "string"
+          },
+          "data": {},
+          "durationMs": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "error": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "exitCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "rebootRequired": {
+            "type": "boolean"
+          },
+          "stderr": {
+            "type": "string"
+          },
+          "stdout": {
+            "type": "string"
+          },
+          "strategy": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "taskId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "code",
+          "message",
+          "data",
+          "error",
+          "stdout",
+          "stderr",
+          "exitCode",
+          "durationMs",
+          "taskId",
+          "rebootRequired",
+          "artifacts",
+          "strategy"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "readOnly": false,
+        "idempotent": false,
+        "destructive": true,
+        "heavy": false
+      }
+    },
+    {
+      "name": "aplm_shell",
       "title": "执行命令",
       "description": "以 root、shell 或指定 UID 执行命令。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_shell.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_shell.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -9226,11 +9646,11 @@
       }
     },
     {
-      "name": "zcr521_skill",
+      "name": "aplm_skill",
       "title": "技能与记忆",
       "description": "渐进匹配、按需读取并管理内置及自动学习技能。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_skill.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_skill.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -9418,11 +9838,377 @@
       }
     },
     {
-      "name": "zcr521_status",
+      "name": "aplm_ssh",
+      "title": "SSH 远程",
+      "description": "通过 SSH 连接远端执行命令、传输文件与建立端口转发。",
+      "inputSchema": {
+        "$id": "https://aplm123.local/schema/tools/aplm_ssh.json",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "properties": {
+              "action": {
+                "const": "connect"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "connect"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "exec"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "exec"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "upload"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "upload"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "download"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "download"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "forward"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "forward"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "unforward"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "unforward"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "list"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "list"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "close"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "close"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "keys"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "keys"
+          }
+        ],
+        "properties": {
+          "action": {
+            "description": "要执行的明确操作。",
+            "enum": [
+              "connect",
+              "exec",
+              "upload",
+              "download",
+              "forward",
+              "unforward",
+              "list",
+              "close",
+              "keys"
+            ],
+            "type": "string"
+          },
+          "all": {
+            "description": "是否对全部对象生效，例如关闭所有 SSH 会话。",
+            "type": "boolean"
+          },
+          "background": {
+            "description": "是否转为持久后台任务执行。",
+            "type": "boolean"
+          },
+          "bindAddr": {
+            "description": "本地转发监听地址，默认 127.0.0.1。",
+            "type": "string"
+          },
+          "bindPort": {
+            "description": "本地转发监听端口；0 表示随机分配。",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "cmd": {
+            "description": "Shell 命令兼容别名。",
+            "type": "string"
+          },
+          "command": {
+            "description": "要执行的 Shell 命令。",
+            "type": "string"
+          },
+          "cwd": {
+            "description": "子进程工作目录；相对路径基于默认工作目录。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "dest": {
+            "description": "destination 的兼容别名。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "env": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "附加环境变量。",
+            "type": "object"
+          },
+          "forward": {
+            "description": "forwardId 的兼容别名。",
+            "type": "string"
+          },
+          "forwardId": {
+            "description": "端口转发 ID。",
+            "type": "string"
+          },
+          "host": {
+            "description": "主机名或 IP 地址。",
+            "type": "string"
+          },
+          "insecure": {
+            "description": "跳过 SSH 主机密钥校验（不安全，仅用于可信内网调试）。",
+            "type": "boolean"
+          },
+          "keep": {
+            "description": "connect 时是否保留会话供后续复用。",
+            "type": "boolean"
+          },
+          "keyFile": {
+            "description": "SSH 私钥文件路径；相对路径基于默认工作目录。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "knownHosts": {
+            "description": "known_hosts 文件路径；默认写入状态目录下的 ssh/known_hosts。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "localPath": {
+            "description": "本地文件路径；相对路径基于默认工作目录。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "passphrase": {
+            "description": "加密私钥的 passphrase。",
+            "type": "string"
+          },
+          "password": {
+            "description": "SSH 密码认证凭据。",
+            "type": "string"
+          },
+          "port": {
+            "description": "TCP 端口。",
+            "maximum": 65535,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "privateKey": {
+            "description": "SSH 私钥文本（PEM/OpenSSH 格式）。",
+            "type": "string"
+          },
+          "remote": {
+            "description": "remotePath 的兼容别名。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "remotePath": {
+            "description": "远端文件路径（POSIX 语义，相对于登录用户家目录）。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "sessionId": {
+            "description": "Package Manager session ID。",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "src": {
+            "description": "source 的兼容别名。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "stdin": {
+            "description": "发送给子进程标准输入的内容。",
+            "type": "string"
+          },
+          "target": {
+            "description": "链接、挂载或 Systemless 目标路径。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "targetHost": {
+            "description": "端口转发的目标主机（由远端解析）。",
+            "type": "string"
+          },
+          "targetPort": {
+            "description": "端口转发的目标端口。",
+            "maximum": 65535,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "timeout": {
+            "description": "超时秒数或 Go 风格时长。",
+            "oneOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "pattern": "^[0-9]+(?:ms|s|m|h)$",
+                "type": "string"
+              }
+            ]
+          },
+          "timeoutMs": {
+            "description": "超时毫秒数。",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "user": {
+            "description": "Android 用户 ID 或 Shell 身份兼容字段。",
+            "oneOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "minLength": 1,
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "type": "array"
+          },
+          "code": {
+            "type": "string"
+          },
+          "data": {},
+          "durationMs": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "error": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "exitCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "rebootRequired": {
+            "type": "boolean"
+          },
+          "stderr": {
+            "type": "string"
+          },
+          "stdout": {
+            "type": "string"
+          },
+          "strategy": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "taskId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "code",
+          "message",
+          "data",
+          "error",
+          "stdout",
+          "stderr",
+          "exitCode",
+          "durationMs",
+          "taskId",
+          "rebootRequired",
+          "artifacts",
+          "strategy"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "readOnly": false,
+        "idempotent": false,
+        "destructive": true,
+        "heavy": false
+      }
+    },
+    {
+      "name": "aplm_status",
       "title": "服务状态",
       "description": "读取服务、Root、地址、任务与运行时间状态。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_status.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_status.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -9523,11 +10309,11 @@
       }
     },
     {
-      "name": "zcr521_systemless",
+      "name": "aplm_systemless",
       "title": "Systemless 覆盖",
       "description": "应用、移除、列出或校验 Systemless 覆盖。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_systemless.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_systemless.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -9714,11 +10500,11 @@
       }
     },
     {
-      "name": "zcr521_task",
+      "name": "aplm_task",
       "title": "任务管理",
       "description": "读取、列出、更新、取消任务或读取日志。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_task.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_task.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -9897,11 +10683,11 @@
       }
     },
     {
-      "name": "zcr521_transfer_export",
+      "name": "aplm_transfer_export",
       "title": "导出文件",
       "description": "将文件、目录或任务产物导出到临时下载地址。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_transfer_export.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_transfer_export.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -10060,11 +10846,11 @@
       }
     },
     {
-      "name": "zcr521_transfer_upload",
+      "name": "aplm_transfer_upload",
       "title": "分块上传",
       "description": "创建、查询、分块完成或取消上传。",
       "inputSchema": {
-        "$id": "https://zcr521.local/schema/tools/zcr521_transfer_upload.json",
+        "$id": "https://aplm123.local/schema/tools/aplm_transfer_upload.json",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": false,
         "oneOf": [
@@ -10252,6 +11038,294 @@
         "idempotent": false,
         "destructive": true,
         "heavy": true
+      }
+    },
+    {
+      "name": "aplm_ui",
+      "title": "界面元素",
+      "description": "按 text/resourceId/class 定位界面元素并点击、输入、滚动。",
+      "inputSchema": {
+        "$id": "https://aplm123.local/schema/tools/aplm_ui.json",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "properties": {
+              "action": {
+                "const": "dump"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "dump"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "find"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "find"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "click"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "click"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "wait"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "wait"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "exists"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "exists"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "type"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "type"
+          },
+          {
+            "properties": {
+              "action": {
+                "const": "scroll_to"
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "title": "scroll_to"
+          }
+        ],
+        "properties": {
+          "action": {
+            "description": "要执行的明确操作。",
+            "enum": [
+              "dump",
+              "find",
+              "click",
+              "wait",
+              "exists",
+              "type",
+              "scroll_to"
+            ],
+            "type": "string"
+          },
+          "class": {
+            "description": "按控件类名匹配元素，可写全名或简写。",
+            "type": "string"
+          },
+          "className": {
+            "description": "class 的兼容别名。",
+            "type": "string"
+          },
+          "clickable": {
+            "description": "是否只匹配可点击元素。",
+            "type": "boolean"
+          },
+          "contentDesc": {
+            "description": "contentDescription 的兼容别名。",
+            "type": "string"
+          },
+          "contentDescription": {
+            "description": "按无障碍描述精确匹配元素。",
+            "type": "string"
+          },
+          "direction": {
+            "description": "滚动方向。",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "type": "string"
+          },
+          "durationMs": {
+            "description": "持续时间毫秒数。",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "任务、模块、计划或组件 ID。",
+            "type": "string"
+          },
+          "index": {
+            "description": "零基索引。",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "limit": {
+            "description": "返回或读取上限。",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "longPress": {
+            "description": "是否使用长按而非点击。",
+            "type": "boolean"
+          },
+          "maxResults": {
+            "description": "最大返回结果数。",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "maxSwipes": {
+            "description": "滚动查找的最大滑动次数。",
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "package": {
+            "description": "Android 包名。",
+            "type": "string"
+          },
+          "packageName": {
+            "description": "package 的兼容别名。",
+            "type": "string"
+          },
+          "resourceId": {
+            "description": "按资源 ID 精确匹配元素，例如 com.app:id/button。",
+            "type": "string"
+          },
+          "selector": {
+            "additionalProperties": true,
+            "description": "元素定位条件对象（text/textContains/contentDescription/resourceId/class/index）。",
+            "type": "object"
+          },
+          "swipePercent": {
+            "description": "单次滑动的屏幕高度占比。",
+            "maximum": 80,
+            "minimum": 10,
+            "type": "integer"
+          },
+          "text": {
+            "description": "文本、搜索内容或输入内容。",
+            "type": "string"
+          },
+          "textContains": {
+            "description": "按文本包含关系匹配元素。",
+            "type": "string"
+          },
+          "timeout": {
+            "description": "超时秒数或 Go 风格时长。",
+            "oneOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "pattern": "^[0-9]+(?:ms|s|m|h)$",
+                "type": "string"
+              }
+            ]
+          },
+          "timeoutMs": {
+            "description": "超时毫秒数。",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "type": "array"
+          },
+          "code": {
+            "type": "string"
+          },
+          "data": {},
+          "durationMs": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "error": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "exitCode": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "rebootRequired": {
+            "type": "boolean"
+          },
+          "stderr": {
+            "type": "string"
+          },
+          "stdout": {
+            "type": "string"
+          },
+          "strategy": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "taskId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "code",
+          "message",
+          "data",
+          "error",
+          "stdout",
+          "stderr",
+          "exitCode",
+          "durationMs",
+          "taskId",
+          "rebootRequired",
+          "artifacts",
+          "strategy"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "readOnly": false,
+        "idempotent": false,
+        "destructive": true,
+        "heavy": false
       }
     }
   ]

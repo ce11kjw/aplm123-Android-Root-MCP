@@ -17,8 +17,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/atomicfile"
-	"github.com/zcr521/android-ai-mcp/internal/buildinfo"
+	"github.com/aplm123/android-ai-mcp/internal/atomicfile"
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
 )
 
 type Options struct {
@@ -453,7 +453,7 @@ func restorePreviousBinary(previous, active string) error {
 		return err
 	}
 	defer source.Close()
-	destination, err := os.CreateTemp(filepath.Dir(active), ".zcr521d-rollback-*")
+	destination, err := os.CreateTemp(filepath.Dir(active), ".aplm123d-rollback-*")
 	if err != nil {
 		return err
 	}

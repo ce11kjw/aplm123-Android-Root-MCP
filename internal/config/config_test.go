@@ -48,7 +48,7 @@ func TestLoadMergesNewFieldsWithoutDiscardingExistingConfig(t *testing.T) {
 	legacy := `{
 	  "schemaVersion": 1,
 	  "network": {"port": 5444, "listenLoopback": true, "listenLan": true, "legacySse": true},
-	  "paths": {"stateDir": "` + filepath.ToSlash(dir) + `", "workDir": "/storage/emulated/0/custom-zcr521"}
+	  "paths": {"stateDir": "` + filepath.ToSlash(dir) + `", "workDir": "/storage/emulated/0/custom-aplm123"}
 	}`
 	if err := os.WriteFile(path, []byte(legacy), 0o600); err != nil {
 		t.Fatal(err)
@@ -63,13 +63,13 @@ func TestLoadMergesNewFieldsWithoutDiscardingExistingConfig(t *testing.T) {
 	if cfg.Network.Port != 5444 || cfg.Limits.TotalTasks != 8 || !cfg.Security.OnLinkOnly {
 		t.Fatalf("existing and added fields were not merged: %#v", cfg)
 	}
-	if got := filepath.ToSlash(cfg.Paths.DownloadsDir); got != "/storage/emulated/0/custom-zcr521/downloads" {
+	if got := filepath.ToSlash(cfg.Paths.DownloadsDir); got != "/storage/emulated/0/custom-aplm123/downloads" {
 		t.Fatalf("downloadsDir = %q", got)
 	}
 }
 
 func TestEnsureWorkDirectoriesCreatesOnlyWorkspaceRoot(t *testing.T) {
-	root := filepath.Join(t.TempDir(), "zcr521AI")
+	root := filepath.Join(t.TempDir(), "aplm123AI")
 	cfg := Default()
 	cfg.Paths.WorkDir = root
 	derivePaths(&cfg)

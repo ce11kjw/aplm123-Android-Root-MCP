@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/model"
 )
 
 func TestCompletionHookFailureKeepsOnlyBoundedRetryEnvelope(t *testing.T) {
@@ -27,7 +27,7 @@ func TestCompletionHookFailureKeepsOnlyBoundedRetryEnvelope(t *testing.T) {
 	manager.SetCompletionHook(func(Task) (json.RawMessage, error) {
 		return json.RawMessage(`{"action":"calculate","path":{"redacted":true,"type":"path"}}`), errors.New("journal unavailable")
 	})
-	task, err := manager.Submit("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "never-persist-raw"}, false, true)
+	task, err := manager.Submit("aplm_fs_hash", map[string]any{"action": "calculate", "path": "never-persist-raw"}, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestCompletionIsNotVisibleUntilHookAndSnapshotCommit(t *testing.T) {
 		<-release
 		return nil, nil
 	})
-	task, err := manager.Submit("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "x"}, false, true)
+	task, err := manager.Submit("aplm_fs_hash", map[string]any{"action": "calculate", "path": "x"}, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +140,7 @@ func TestPendingCompletionRetriesAutomatically(t *testing.T) {
 		}
 		return nil, nil
 	})
-	task, err := manager.Submit("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "x"}, false, true)
+	task, err := manager.Submit("aplm_fs_hash", map[string]any{"action": "calculate", "path": "x"}, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +214,7 @@ func TestRestartRecoveryIsBounded(t *testing.T) {
 	for index := 0; index < total; index++ {
 		id := fmt.Sprintf("00000000-0000-4000-8000-%012d", index)
 		task := Task{
-			ID: id, Tool: "zcr521_fs_hash", Arguments: json.RawMessage(`{"action":"calculate","path":"x"}`),
+			ID: id, Tool: "aplm_fs_hash", Arguments: json.RawMessage(`{"action":"calculate","path":"x"}`),
 			Status: StatusRunning, Durable: true, CreatedAt: now.Add(time.Duration(index) * time.Millisecond), UpdatedAt: now,
 		}
 		raw, err := json.Marshal(task)
@@ -313,13 +313,13 @@ func TestOutstandingTaskQueueIsBounded(t *testing.T) {
 	}
 	ids := make([]string, 0, manager.outstandingLimit)
 	for index := 0; index < manager.outstandingLimit; index++ {
-		task, err := manager.Submit("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "x"}, false, true)
+		task, err := manager.Submit("aplm_fs_hash", map[string]any{"action": "calculate", "path": "x"}, false, true)
 		if err != nil {
 			t.Fatalf("submit %d: %v", index, err)
 		}
 		ids = append(ids, task.ID)
 	}
-	if _, err := manager.Submit("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "x"}, false, true); !errors.Is(err, ErrQueueFull) {
+	if _, err := manager.Submit("aplm_fs_hash", map[string]any{"action": "calculate", "path": "x"}, false, true); !errors.Is(err, ErrQueueFull) {
 		t.Fatalf("unbounded queue error=%v", err)
 	}
 	manager.Close()
@@ -340,7 +340,7 @@ func TestCanceledWaitDoesNotLeakWaiters(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := manager.Submit("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "x"}, false, true)
+	task, err := manager.Submit("aplm_fs_hash", map[string]any{"action": "calculate", "path": "x"}, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -375,7 +375,7 @@ func TestSubmitPersistsAndCompletes(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer manager.Close()
-	task, err := manager.Submit("zcr521_fs_hash", map[string]any{"path": "x"}, true, true)
+	task, err := manager.Submit("aplm_fs_hash", map[string]any{"path": "x"}, true, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -402,7 +402,7 @@ func TestDurableInterruptedTaskResumes(t *testing.T) {
 	now := time.Now().UTC()
 	task := Task{
 		ID:        "00000000-0000-4000-8000-000000000001",
-		Tool:      "zcr521_download",
+		Tool:      "aplm_download",
 		Arguments: json.RawMessage(`{"url":"x"}`),
 		Status:    StatusRunning,
 		Heavy:     true,
@@ -448,7 +448,7 @@ func TestTimeoutResultHasDistinctTerminalStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer manager.Close()
-	task, err := manager.Submit("zcr521_shell", map[string]any{"command": "sleep 10"}, false, true)
+	task, err := manager.Submit("aplm_shell", map[string]any{"command": "sleep 10"}, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}

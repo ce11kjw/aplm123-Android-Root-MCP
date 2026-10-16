@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/model"
 )
 
 func TestProgressiveBuiltinsAndRedactedLearning(t *testing.T) {
@@ -48,7 +48,7 @@ func TestProgressiveBuiltinsAndRedactedLearning(t *testing.T) {
 	result.Strategy = "test_http"
 	result.Artifacts = []model.Artifact{{Path: "/private/output/archive.super-secret-extension"}}
 	for range 2 {
-		if err := store.Record("zcr521_network", args, result); err != nil {
+		if err := store.Record("aplm_network", args, result); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -86,16 +86,16 @@ func TestProgressiveBuiltinsAndRedactedLearning(t *testing.T) {
 func TestBuiltinTriggerMatrixUsesExactToolMappings(t *testing.T) {
 	store := New(filepath.Join(t.TempDir(), "state"), filepath.Join(t.TempDir(), "work"))
 	tests := map[string]string{
-		"zcr521_network web_extract":     "builtin/android-web-automation",
-		"zcr521_network browser_capture": "builtin/android-web-automation",
-		"zcr521_network feed_parse":      "builtin/android-web-automation",
-		"zcr521_network cookie_list":     "builtin/android-web-automation",
-		"zcr521_network ws_connect":      "builtin/android-web-automation",
-		"zcr521_status get":              "builtin/mcp-efficient-workflow",
-		"zcr521_task get":                "builtin/mcp-efficient-workflow",
-		"zcr521_transfer_upload create":  "builtin/mcp-efficient-workflow",
-		"zcr521_backup restore":          "builtin/mcp-efficient-workflow",
-		"zcr521_shell run":               "builtin/mcp-efficient-workflow",
+		"aplm_network web_extract":     "builtin/android-web-automation",
+		"aplm_network browser_capture": "builtin/android-web-automation",
+		"aplm_network feed_parse":      "builtin/android-web-automation",
+		"aplm_network cookie_list":     "builtin/android-web-automation",
+		"aplm_network ws_connect":      "builtin/android-web-automation",
+		"aplm_status get":              "builtin/mcp-efficient-workflow",
+		"aplm_task get":                "builtin/mcp-efficient-workflow",
+		"aplm_transfer_upload create":  "builtin/mcp-efficient-workflow",
+		"aplm_backup restore":          "builtin/mcp-efficient-workflow",
+		"aplm_shell run":               "builtin/mcp-efficient-workflow",
 	}
 	for query, expected := range tests {
 		matches := store.Match(query, 1)
@@ -111,7 +111,7 @@ func TestForgetOnlyRemovesLearnedSkill(t *testing.T) {
 	if err := store.Forget("builtin/mcp-efficient-workflow"); err == nil {
 		t.Fatal("built-in skill deletion was allowed")
 	}
-	if err := store.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "ok", nil)); err != nil {
+	if err := store.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "ok", nil)); err != nil {
 		t.Fatal(err)
 	}
 	id := store.List("learned")[0].ID
@@ -133,11 +133,11 @@ func TestBackgroundTaskReceiptIsIdempotentAcrossRestart(t *testing.T) {
 	result := model.Success("OK", "done", nil)
 	result.TaskID = "task-123"
 	first := New(state, work)
-	if err := first.Record("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "a"}, result); err != nil {
+	if err := first.Record("aplm_fs_hash", map[string]any{"action": "calculate", "path": "a"}, result); err != nil {
 		t.Fatal(err)
 	}
 	second := New(state, work)
-	if err := second.Record("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "a"}, result); err != nil {
+	if err := second.Record("aplm_fs_hash", map[string]any{"action": "calculate", "path": "a"}, result); err != nil {
 		t.Fatal(err)
 	}
 	if got := second.Stats()["receipts"]; got != 1 {
@@ -151,7 +151,7 @@ func TestReceiptRecoversMissingIndexSkillAndMirror(t *testing.T) {
 	work := filepath.Join(root, "work")
 	result := model.Failure("IO_ERROR", "failed", "IOError", "private path")
 	first := New(state, work)
-	if err := first.Record("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "a"}, result); err != nil {
+	if err := first.Record("aplm_fs_hash", map[string]any{"action": "calculate", "path": "a"}, result); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.RemoveAll(filepath.Join(state, "MCP", "skills")); err != nil {
@@ -178,7 +178,7 @@ func TestForgetTombstoneSurvivesRestart(t *testing.T) {
 	state := filepath.Join(root, "state")
 	work := filepath.Join(root, "work")
 	store := New(state, work)
-	if err := store.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "ok", nil)); err != nil {
+	if err := store.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "ok", nil)); err != nil {
 		t.Fatal(err)
 	}
 	id := store.List("learned")[0].ID
@@ -189,7 +189,7 @@ func TestForgetTombstoneSurvivesRestart(t *testing.T) {
 	if got := restarted.List("learned"); len(got) != 0 {
 		t.Fatalf("forgotten skill was resurrected from receipts: %+v", got)
 	}
-	if err := restarted.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "new generation", nil)); err != nil {
+	if err := restarted.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "new generation", nil)); err != nil {
 		t.Fatal(err)
 	}
 	again := New(state, work)
@@ -203,7 +203,7 @@ func TestForgetGenerationIgnoresFutureDatedOldReceipt(t *testing.T) {
 	state := filepath.Join(root, "state")
 	work := filepath.Join(root, "work")
 	store := New(state, work)
-	if err := store.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "old", nil)); err != nil {
+	if err := store.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "old", nil)); err != nil {
 		t.Fatal(err)
 	}
 	id := store.List("learned")[0].ID
@@ -212,7 +212,7 @@ func TestForgetGenerationIgnoresFutureDatedOldReceipt(t *testing.T) {
 	}
 	oldGeneration := receipt{
 		Version: learnedEntryVersion, ID: "fedcba9876543210fedcba9876543210", CompletedAt: time.Now().UTC().Add(365 * 24 * time.Hour),
-		Tool: "zcr521_status", Action: "get", Fingerprint: strings.Repeat("b", 64), Generation: 0,
+		Tool: "aplm_status", Action: "get", Fingerprint: strings.Repeat("b", 64), Generation: 0,
 		Arguments: map[string]any{"action": "get"}, Outcome: outcome{Success: true, Code: "OK"},
 	}
 	raw, _ := json.Marshal(oldGeneration)
@@ -223,7 +223,7 @@ func TestForgetGenerationIgnoresFutureDatedOldReceipt(t *testing.T) {
 		t.Fatalf("future-dated old generation resurrected forgotten skill: %+v", got)
 	}
 	relearned := New(state, work)
-	if err := relearned.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "new", nil)); err != nil {
+	if err := relearned.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "new", nil)); err != nil {
 		t.Fatal(err)
 	}
 	got := New(state, work).List("learned")
@@ -237,13 +237,13 @@ func TestReceiptIDRecoveryIgnoresWallClockRollback(t *testing.T) {
 	state := filepath.Join(root, "state")
 	work := filepath.Join(root, "work")
 	store := New(state, work)
-	if err := store.Record("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "a"}, model.Success("OK", "first", nil)); err != nil {
+	if err := store.Record("aplm_fs_hash", map[string]any{"action": "calculate", "path": "a"}, model.Success("OK", "first", nil)); err != nil {
 		t.Fatal(err)
 	}
 	entry := store.List("learned")[0]
 	rolledBack := receipt{
 		Version: 3, ID: "0123456789abcdef0123456789abcdef", CompletedAt: entry.UpdatedAt.Add(-24 * time.Hour),
-		Tool: "zcr521_fs_hash", Action: "calculate", Fingerprint: strings.Repeat("a", 64),
+		Tool: "aplm_fs_hash", Action: "calculate", Fingerprint: strings.Repeat("a", 64),
 		Arguments: map[string]any{"action": "calculate", "path": "b"}, Outcome: outcome{Success: false, Code: "IO_ERROR", ErrorClass: "IOError"},
 	}
 	raw, _ := json.Marshal(rolledBack)
@@ -263,13 +263,13 @@ func TestReceiptOrderDefinesLatestAcrossWallClockRollback(t *testing.T) {
 	state := filepath.Join(root, "state")
 	work := filepath.Join(root, "work")
 	store := New(state, work)
-	if err := store.Record("zcr521_fs_hash", map[string]any{"action": "calculate", "path": "a"}, model.Success("OK", "first", nil)); err != nil {
+	if err := store.Record("aplm_fs_hash", map[string]any{"action": "calculate", "path": "a"}, model.Success("OK", "first", nil)); err != nil {
 		t.Fatal(err)
 	}
 	entry := store.List("learned")[0]
 	newerEvent := receipt{
 		Version: learnedEntryVersion, ID: "11111111111111111111111111111111", CompletedAt: entry.UpdatedAt.Add(-48 * time.Hour), Order: entry.LastOrder + 1,
-		Tool: "zcr521_fs_hash", Action: "calculate", Fingerprint: strings.Repeat("c", 64),
+		Tool: "aplm_fs_hash", Action: "calculate", Fingerprint: strings.Repeat("c", 64),
 		Arguments: map[string]any{"action": "calculate", "path": "b"}, Outcome: outcome{Success: false, Code: "IO_ERROR", ErrorClass: "IOError"},
 	}
 	raw, _ := json.Marshal(newerEvent)
@@ -297,7 +297,7 @@ func TestReceiptRecoverySortsByEventOrderBeforeFilename(t *testing.T) {
 		t.Fatal(err)
 	}
 	base := time.Now().UTC()
-	failure := receipt{Version: learnedEntryVersion, ID: strings.Repeat("1", 32), CompletedAt: base, Order: 1, Tool: "zcr521_fs_hash", Action: "calculate", Fingerprint: strings.Repeat("a", 64), Arguments: map[string]any{"action": "calculate", "path": "old"}, Outcome: outcome{Success: false, Code: "IO_ERROR", ErrorClass: "IOError"}}
+	failure := receipt{Version: learnedEntryVersion, ID: strings.Repeat("1", 32), CompletedAt: base, Order: 1, Tool: "aplm_fs_hash", Action: "calculate", Fingerprint: strings.Repeat("a", 64), Arguments: map[string]any{"action": "calculate", "path": "old"}, Outcome: outcome{Success: false, Code: "IO_ERROR", ErrorClass: "IOError"}}
 	success := receipt{Version: learnedEntryVersion, ID: strings.Repeat("2", 32), CompletedAt: base.Add(-24 * time.Hour), Order: 2, Tool: failure.Tool, Action: failure.Action, Fingerprint: strings.Repeat("b", 64), Arguments: map[string]any{"action": "calculate", "path": "new"}, Outcome: outcome{Success: true, Code: "OK"}}
 	for name, value := range map[string]receipt{"z-failure.json": failure, "a-success-old-clock.json": success} {
 		raw, _ := json.Marshal(value)
@@ -317,7 +317,7 @@ func TestCorruptForgetStateFailsClosed(t *testing.T) {
 	state := filepath.Join(root, "state")
 	work := filepath.Join(root, "work")
 	store := New(state, work)
-	if err := store.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "ok", nil)); err != nil {
+	if err := store.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "ok", nil)); err != nil {
 		t.Fatal(err)
 	}
 	indexPath := filepath.Join(state, "MCP", "skills", "index.json")
@@ -340,7 +340,7 @@ func TestCorruptForgetStateFailsClosed(t *testing.T) {
 	if restarted.Stats()["forgetStateTrusted"] != false {
 		t.Fatalf("forget corruption not exposed: %+v", restarted.Stats())
 	}
-	if err := restarted.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "new", nil)); err == nil {
+	if err := restarted.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "new", nil)); err == nil {
 		t.Fatal("untrusted forget state was overwritten")
 	}
 	indexAfter, err := os.ReadFile(indexPath)
@@ -354,7 +354,7 @@ func TestKnowledgeStateRejectsLegacyDowngradeAfterMigration(t *testing.T) {
 	state := filepath.Join(root, "state")
 	work := filepath.Join(root, "work")
 	store := New(state, work)
-	if err := store.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "old", nil)); err != nil {
+	if err := store.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "old", nil)); err != nil {
 		t.Fatal(err)
 	}
 	id := store.List("learned")[0].ID
@@ -378,7 +378,7 @@ func TestKnowledgeStateRejectsLegacyDowngradeAfterMigration(t *testing.T) {
 	cleanState := filepath.Join(cleanRoot, "state")
 	cleanWork := filepath.Join(cleanRoot, "work")
 	clean := New(cleanState, cleanWork)
-	if err := clean.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "kept", nil)); err != nil {
+	if err := clean.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "kept", nil)); err != nil {
 		t.Fatal(err)
 	}
 	receipts, _ := filepath.Glob(filepath.Join(cleanState, "MCP", "invocations", "*.json"))
@@ -397,7 +397,7 @@ func TestKnowledgeStateRejectsLegacyDowngradeAfterMigration(t *testing.T) {
 	if downgradedIndex.Stats()["skillIndexTrusted"] != false {
 		t.Fatalf("legacy index downgrade was accepted: %+v", downgradedIndex.Stats())
 	}
-	if err := downgradedIndex.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "new", nil)); err == nil {
+	if err := downgradedIndex.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "new", nil)); err == nil {
 		t.Fatal("downgraded index was overwritten")
 	}
 }
@@ -407,7 +407,7 @@ func TestForgetBackupGenerationWinsOverStalePrimary(t *testing.T) {
 	state := filepath.Join(root, "state")
 	work := filepath.Join(root, "work")
 	store := New(state, work)
-	if err := store.Record("zcr521_status", map[string]any{"action": "get"}, model.Success("OK", "old", nil)); err != nil {
+	if err := store.Record("aplm_status", map[string]any{"action": "get"}, model.Success("OK", "old", nil)); err != nil {
 		t.Fatal(err)
 	}
 	forgotten := filepath.Join(state, "MCP", "skills", "forgotten.json")
@@ -462,7 +462,7 @@ func TestOversizedReceiptIsNeverReadAndIsCountedForRetention(t *testing.T) {
 
 func TestMatchHardCapsSummariesAtThree(t *testing.T) {
 	store := New(filepath.Join(t.TempDir(), "state"), filepath.Join(t.TempDir(), "work"))
-	matches := store.Match("Android Web MCP zcr521_network zcr521_status token", 5)
+	matches := store.Match("Android Web MCP aplm_network aplm_status token", 5)
 	if len(matches) > 3 {
 		t.Fatalf("match returned %d summaries", len(matches))
 	}
@@ -476,7 +476,7 @@ func TestLegacyReceiptIsRescrubbedAndSkillBodyIsBounded(t *testing.T) {
 	if err := os.MkdirAll(invocations, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	legacy := receipt{Version: 3, ID: strings.Repeat("3", 32), CompletedAt: time.Now().UTC(), Tool: "zcr521_network", Action: "http", Fingerprint: strings.Repeat("c", 64), Arguments: map[string]any{"action": "http", "url": "https://example.test/private/secret?token=leak", "headers": map[string]any{"Authorization": "Bearer legacy-secret"}}, Outcome: outcome{Success: true, Code: "OK", Artifacts: []string{"private-secret-name.txt"}}}
+	legacy := receipt{Version: 3, ID: strings.Repeat("3", 32), CompletedAt: time.Now().UTC(), Tool: "aplm_network", Action: "http", Fingerprint: strings.Repeat("c", 64), Arguments: map[string]any{"action": "http", "url": "https://example.test/private/secret?token=leak", "headers": map[string]any{"Authorization": "Bearer legacy-secret"}}, Outcome: outcome{Success: true, Code: "OK", Artifacts: []string{"private-secret-name.txt"}}}
 	raw, _ := json.Marshal(legacy)
 	if err := os.WriteFile(filepath.Join(invocations, "legacy.json"), raw, 0o600); err != nil {
 		t.Fatal(err)
@@ -562,7 +562,7 @@ func TestChecksummedSkillIndexRecoversBackupAndFailsClosedIfBothCorrupt(t *testi
 	work := filepath.Join(root, "work")
 	store := New(state, work)
 	result := model.Success("OK", "done", nil)
-	if err := store.Record("zcr521_network", map[string]any{"action": "http", "url": "https://example.test/"}, result); err != nil {
+	if err := store.Record("aplm_network", map[string]any{"action": "http", "url": "https://example.test/"}, result); err != nil {
 		t.Fatal(err)
 	}
 	store.mu.Lock()
@@ -584,7 +584,7 @@ func TestChecksummedSkillIndexRecoversBackupAndFailsClosedIfBothCorrupt(t *testi
 		t.Fatal(err)
 	}
 	recovered := New(state, work)
-	entry, _, err := recovered.Get("learned/zcr521-network-http")
+	entry, _, err := recovered.Get("learned/aplm-network-http")
 	if err != nil || entry.Attempts != 1 || recovered.Stats()["skillIndexTrusted"] != true {
 		t.Fatalf("backup recovery failed: entry=%+v err=%v stats=%+v", entry, err, recovered.Stats())
 	}
@@ -598,7 +598,7 @@ func TestChecksummedSkillIndexRecoversBackupAndFailsClosedIfBothCorrupt(t *testi
 	if corrupt.Stats()["skillIndexTrusted"] != false {
 		t.Fatalf("double-corrupt index was trusted: %+v", corrupt.Stats())
 	}
-	if err := corrupt.Record("zcr521_network", map[string]any{"action": "http"}, result); err == nil {
+	if err := corrupt.Record("aplm_network", map[string]any{"action": "http"}, result); err == nil {
 		t.Fatal("untrusted compacted index was overwritten")
 	}
 	raw, err := os.ReadFile(index)

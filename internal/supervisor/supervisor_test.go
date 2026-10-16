@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/buildinfo"
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
 )
 
 func TestStopProcessTerminatesLiveChild(t *testing.T) {
@@ -57,7 +57,7 @@ func TestCrashLoopStopsAfterFiveFailuresAndPersistsReason(t *testing.T) {
 	stateDir := t.TempDir()
 	options := DefaultOptions()
 	options.StateDir = stateDir
-	options.Executable = filepath.Join(stateDir, "missing-zcr521d")
+	options.Executable = filepath.Join(stateDir, "missing-aplm123d")
 	options.StableAfter = time.Hour
 	options.FailureWindow = time.Minute
 	options.MaxFailures = 5

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -60,7 +61,7 @@ func testOptions(t *testing.T) Options {
 		ProtocolLegacy:     "2024-11-05",
 		ListenAddr:         "127.0.0.1",
 		Port:               5322,
-		WorkDir:            "/storage/emulated/0/zcr521AI",
+		WorkDir:            "/storage/emulated/0/aplm123AI",
 		TransferDir:        filepath.Join(t.TempDir(), "transfer"),
 		EnableLegacySSE:    true,
 		MaxRequestBytes:    64 << 10,
@@ -115,7 +116,7 @@ func TestMCPVersionRouting(t *testing.T) {
 		{
 			name:   "current background tool with tasks extension",
 			header: "2026-07-28",
-			body: `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"zcr521_fs_hash",` +
+			body: `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"aplm_fs_hash",` +
 				`"arguments":{"action":"calculate","path":"x","background":true},` +
 				`"_meta":{"io.modelcontextprotocol/clientCapabilities":{"extensions":` +
 				`{"io.modelcontextprotocol/tasks":{}}}}}}`,
@@ -124,7 +125,7 @@ func TestMCPVersionRouting(t *testing.T) {
 		{
 			name:   "current background tool without tasks extension",
 			header: "2026-07-28",
-			body: `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"zcr521_fs_hash",` +
+			body: `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"aplm_fs_hash",` +
 				`"arguments":{"action":"calculate","path":"x","background":true}}}`,
 			handler: "current",
 		},
@@ -147,8 +148,11 @@ func TestMCPVersionRouting(t *testing.T) {
 			if got := response.Header().Get("X-Test-Handler"); got != test.handler {
 				t.Fatalf("handler = %q, want %q; body=%s", got, test.handler, response.Body.String())
 			}
-			if got := response.Header().Get("X-Test-Body"); got != test.body {
-				t.Fatalf("forwarded body = %q, want %q", got, test.body)
+			// 2026-07-28 协议的请求体会被补齐 _meta（SDK 强制要求），
+			// 因此这里做语义比较：解析后忽略 _meta，其余字段必须一致。
+			gotBody := response.Header().Get("X-Test-Body")
+			if !sameRequestIgnoringMeta(t, gotBody, test.body) {
+				t.Fatalf("forwarded body = %q, want %q", gotBody, test.body)
 			}
 		})
 	}
@@ -341,4 +345,28 @@ func TestLegacySSEAdvertisesMessagesEndpoint(t *testing.T) {
 
 func errorsIsContext(err error) bool {
 	return err == context.Canceled || err == context.DeadlineExceeded
+}
+
+// sameRequestIgnoringMeta 比较两个 JSON-RPC 请求体，忽略服务端注入的 _meta。
+func sameRequestIgnoringMeta(t *testing.T, got, want string) bool {
+	t.Helper()
+	var g, w map[string]any
+	if err := json.Unmarshal([]byte(got), &g); err != nil {
+		return false
+	}
+	if err := json.Unmarshal([]byte(want), &w); err != nil {
+		return false
+	}
+	drop := func(m map[string]any) {
+		if params, ok := m["params"].(map[string]any); ok {
+			delete(params, "_meta")
+			// 服务端补齐 _meta 后 params 为空对象时，与原本无 params 等价
+			if len(params) == 0 {
+				delete(m, "params")
+			}
+		}
+	}
+	drop(g)
+	drop(w)
+	return reflect.DeepEqual(g, w)
 }

@@ -82,7 +82,7 @@ func (m *Manager) fetchHTTP(ctx context.Context, args map[string]any, hardMax in
 	if err != nil {
 		return httpFetchResult{}, sanitizeNetworkError(err, rawURL)
 	}
-	request.Header.Set("User-Agent", "ZCR521-Android-AI-MCP/2")
+	request.Header.Set("User-Agent", "aplm123-Android-Root-MCP/2")
 	for key, value := range headers {
 		request.Header.Set(key, value)
 	}
@@ -216,7 +216,7 @@ func (m *Manager) httpRequest(ctx context.Context, args map[string]any) Result {
 	}
 	message := "HTTP 请求成功"
 	if inlineTruncated || headersTruncated {
-		message = "HTTP 请求成功；内联结果已按 Token 预算截断，完整大文件请使用 zcr521_download"
+		message = "HTTP 请求成功；内联结果已按 Token 预算截断，完整大文件请使用 aplm_download"
 	}
 	return ok(message, data, "net_http_cookie_jar")
 }

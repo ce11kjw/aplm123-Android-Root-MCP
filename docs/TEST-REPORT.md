@@ -20,10 +20,10 @@
 | 局域网 | 真机直接访问 `http://192.168.1.61:5322/status` | 通过；`mcpAddress` 为 `http://192.168.1.61:5322/mcp`，版本仍为 `0.01` |
 | Helper 门禁 | `TestEmbeddedAppQueryHelper`；源码/JAR SHA-256、DEX min API 与协议标记 | 通过；`-SkipTests` 构建也不会跳过 |
 | 发布包 | `build.ps1 -SkipTests -Skip7Zip`；三 ABI daemon 与已有 7zz 均通过 machine/PIE/16 KiB 校验，正式 ZIP 18 个唯一条目 | 通过 |
-| 模块验包 | `scripts/verify_module.py dist/ZCR521-Android-AI-MCP-v0.01-universal.zip` | 通过；精确条目、许可证、脚本、权限和六个 ELF 均符合门禁 |
+| 模块验包 | `scripts/verify_module.py dist/aplm123-Android-Root-MCP-v0.01-universal.zip` | 通过；精确条目、许可证、脚本、权限和六个 ELF 均符合门禁 |
 | 全量测试 | 未运行 | 按本轮要求仅做必要测试 |
 
-当前 ZIP：`ZCR521-Android-AI-MCP-v0.02-universal.zip`，19,675,516 bytes，SHA-256 `f7af3cf9a8de4240b3542d8e81ffcb1ad3bc20d3a5cb946392021c5e5cd03b1d`。
+当前 ZIP：`aplm123-Android-Root-MCP-v0.02-universal.zip`，19,675,516 bytes，SHA-256 `f7af3cf9a8de4240b3542d8e81ffcb1ad3bc20d3a5cb946392021c5e5cd03b1d`。
 
 以下章节保留 2026-07-30 的历史基线，仅供回溯；本轮未重新执行，不代表当前全量结果。
 
@@ -66,7 +66,7 @@
 
 ## 最终二进制运行时验收
 
-本闸门直接启动编译后的 `zcr521d supervisor`，不使用进程内测试替代真实
+本闸门直接启动编译后的 `aplm123d supervisor`，不使用进程内测试替代真实
 frontend → Unix Socket → broker → operation 链路。
 
 | 检查 | 结果 |
@@ -120,7 +120,7 @@ Windows 当前令牌没有创建符号链接的权限，因此“已有符号链
 
 ## Android ELF 与模块构建
 
-`zcr521d` 和 `7zz` 均由 NDK r29 为下列 ABI 真实构建，不使用占位文件：
+`aplm123d` 和 `7zz` 均由 NDK r29 为下列 ABI 真实构建，不使用占位文件：
 
 | ABI | ELF machine | PIE | PT_LOAD 最大页对齐 | API 基线 |
 |---|---:|---|---:|---:|

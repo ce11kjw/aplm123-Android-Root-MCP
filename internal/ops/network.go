@@ -138,7 +138,7 @@ func (m *Manager) networkOperation(ctx context.Context, req Request) Result {
 		}
 		child := copyArgs(req.Args)
 		child["action"] = action
-		return m.connectivityOperation(ctx, Request{Tool: "zcr521_connectivity", Args: child})
+		return m.connectivityOperation(ctx, Request{Tool: "aplm_connectivity", Args: child})
 	default:
 		return invalidAction(req.Tool, action, "browser_capture", "connections", "cookie_clear", "cookie_delete", "cookie_list", "cookie_set", "dns", "dns_lookup", "feed_parse", "gateway", "http", "http_request", "interfaces", "internet_test", "ip", "lan_test", "ping", "port_check", "proxy", "resolve", "routes", "tcp_check", "web_extract", "wifi_info", "ws_close", "ws_connect", "ws_list", "ws_ping", "ws_receive", "ws_send")
 	}

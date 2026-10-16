@@ -34,7 +34,7 @@
 
 Schema 使用 JSON Schema 2020-12；每个工具都要求 `action`，用 `enum` 与 `oneOf` 描述允许动作，并标记只读、幂等、破坏性和重任务属性。
 
-当前 `2026-07-28` 协议只在 `structuredContent` 放置一次完整结果，文本内容压缩为 `CODE: message`；旧协议仍保留完整 JSON 文本以兼容只读取文本的客户端。在线 `tools/list` 省略重复的 `$schema`、`$id` 与输出 Schema，普通旧工具还省略等价 `oneOf`；`zcr521_network` 和 `zcr521_skill` 保留动作级必填与上限约束。完整离线契约仍保留在 `schemas/tools.json`。这两项只减少传输与模型上下文，不改变服务端参数校验。
+当前 `2026-07-28` 协议只在 `structuredContent` 放置一次完整结果，文本内容压缩为 `CODE: message`；旧协议仍保留完整 JSON 文本以兼容只读取文本的客户端。在线 `tools/list` 省略重复的 `$schema`、`$id` 与输出 Schema，普通旧工具还省略等价 `oneOf`；`aplm_network` 和 `aplm_skill` 保留动作级必填与上限约束。完整离线契约仍保留在 `schemas/tools.json`。这两项只减少传输与模型上下文，不改变服务端参数校验。
 
 ## 技能自动匹配与完成记忆
 
@@ -45,8 +45,8 @@ Schema 使用 JSON Schema 2020-12；每个工具都要求 `action`，用 `enum` 
 1. 同步工具真正返回结果后写收据；后台调用只在任务进入终态时先提交独立完成收据，再删除终态任务快照中的原始参数。
 2. v4 收据保存随机唯一 ID、单调事件序号、技能代次、工具、action、脱敏参数形状、成功状态、错误分类、策略、耗时、退出码、重启要求与白名单产物类型，不保存完整输出、产物文件名或秘密。
 3. 同一 `tool/action` 的结果聚合更新一个详细 `SKILL.md`，记录尝试/成功/失败后恢复次数、适用条件、脱敏参数模板、最近已知成功方案、验收信号和失败类别。
-4. 权威收据位于 `/data/adb/zcr521-mcp/MCP/invocations`，技能位于其 `skills/learned`；技能同步镜像到 `/storage/emulated/0/zcr521AI/MCP/skills/learned`。
-5. 任一步持久化失败不会伪造“已保存”，`zcr521_skill.stats` 会暴露最近错误；业务工具结果本身不因学习失败而被改写。
+4. 权威收据位于 `/data/adb/aplm123-mcp/MCP/invocations`，技能位于其 `skills/learned`；技能同步镜像到 `/storage/emulated/0/aplm123AI/MCP/skills/learned`。
+5. 任一步持久化失败不会伪造“已保存”，`aplm_skill.stats` 会暴露最近错误；业务工具结果本身不因学习失败而被改写。
 6. 收据超过 20,000 个或 64 MiB 时压缩到 16,000 个且不高于 48 MiB；仍可恢复的任务 ID 进入带校验和及存在标记的精确 SHA-256 账本。账本损坏或压缩后缺失时保持只读故障闭锁，不覆盖坏证据。
 7. `TASK_ACCEPTED`、任务/状态轮询、技能自身调用、能力读取和配置读取不进入执行经验，避免高频控制面噪声浪费 Token。
 
@@ -58,7 +58,7 @@ MCP 服务只能可靠学习它实际看到的工具/action 与结果，不能�
 
 后台持久化只接受可安全落盘的参数：Authorization/Cookie/token、headers、body/content/data、命令/脚本、stdin/env、WebSocket 消息以及带 userinfo/query 的 URL 会返回 `BACKGROUND_SENSITIVE_ARGUMENTS_UNSUPPORTED`。任务查询与列表不返回 arguments；终态快照删除原始 arguments，并按任务数、总字节和单任务日志上限保留。
 
-在 `2026-07-28` 请求的逐请求 `_meta.io.modelcontextprotocol/clientCapabilities.extensions` 中声明 `io.modelcontextprotocol/tasks` 时，`tools/call` 返回标准 `CreateTaskResult`（`resultType: "task"`）；未声明扩展的客户端得到普通 `CallToolResult`，其中保留 `TASK_ACCEPTED`、`taskId`，并可通过 `zcr521_task` 查询。
+在 `2026-07-28` 请求的逐请求 `_meta.io.modelcontextprotocol/clientCapabilities.extensions` 中声明 `io.modelcontextprotocol/tasks` 时，`tools/call` 返回标准 `CreateTaskResult`（`resultType: "task"`）；未声明扩展的客户端得到普通 `CallToolResult`，其中保留 `TASK_ACCEPTED`、`taskId`，并可通过 `aplm_task` 查询。
 
 声明扩展的客户端可调用：
 
@@ -68,13 +68,13 @@ MCP 服务只能可靠学习它实际看到的工具/action 与结果，不能�
 
 每个任务请求还必须发送 `Mcp-Method`，以及等于工具名或 `taskId` 的 `Mcp-Name`。未逐请求声明扩展返回 `-32021` 与 HTTP 400；未知任务 ID 返回 `-32602`。当前扩展已经移除 `tasks/list` 和 `tasks/result`，调用它们返回 `-32601`。
 
-`tasks/get` 返回 `resultType: "complete"` 和标准状态 `working`、`completed`、`failed` 或 `cancelled`。Android 工具执行错误属于完成的 `CallToolResult`，因此表现为 `completed` 且内嵌 `isError: true`，不会伪造 JSON-RPC 失败。`tasks/update` 接受标准 `inputResponses`；为兼容首版 ZCR521 客户端，也接受 `progress` 与 `message`，但客户端不能伪造终态。
+`tasks/get` 返回 `resultType: "complete"` 和标准状态 `working`、`completed`、`failed` 或 `cancelled`。Android 工具执行错误属于完成的 `CallToolResult`，因此表现为 `completed` 且内嵌 `isError: true`，不会伪造 JSON-RPC 失败。`tasks/update` 接受标准 `inputResponses`；为兼容首版 aplm123 客户端，也接受 `progress` 与 `message`，但客户端不能伪造终态。
 
 普通轮询使用 `Accept: application/json`，立即返回当前状态。显式只发送 `Accept: text/event-stream` 时，服务器在同一 POST 流上发送 `notifications/tasks`，并额外发送首版约定的 `notifications/tasks/status` 兼容别名。携带两种 Accept 类型的标准客户端仍使用即时 JSON 轮询语义。
 
 ## 上传
 
-1. 通过 `zcr521_transfer_upload` 的 `create` 动作取得随机 ID；HTTP 兼容入口也可创建。
+1. 通过 `aplm_transfer_upload` 的 `create` 动作取得随机 ID；HTTP 兼容入口也可创建。
 2. 向 `/transfer/upload/{id}` 执行 `PUT`，每块最多 4 MiB。
 3. 每块必须携带 `Content-Range: bytes <start>-<end>/<total>`。
 4. 服务器检查连续偏移、总大小和可选 SHA-256，重复提交同一已写区间不会静默覆盖。
@@ -89,7 +89,7 @@ MCP 服务只能可靠学习它实际看到的工具/action 与结果，不能�
 ## STDIO 桥
 
 ```sh
-zcr521-bridge --url http://127.0.0.1:5322/mcp
+aplm123-bridge --url http://127.0.0.1:5322/mcp
 ```
 
 桥从 stdin 读取逐行 JSON-RPC，并转发到 Streamable HTTP；对旧式 SSE 客户端可选择兼容模式。桥把协议输出写 stdout，把诊断写 stderr，避免污染 JSON-RPC 通道。

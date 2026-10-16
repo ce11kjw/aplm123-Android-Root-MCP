@@ -4,7 +4,7 @@ MODDIR=${0%/*}
 ZCR_MODDIR="$MODDIR"
 . "$MODDIR/common.sh"
 
-zcr_repo="32463991/ZCR521-AI-MCP"
+zcr_repo="32463991/aplm123-AI-MCP"
 zcr_current="$(zcr_module_version)"
 zcr_latest=""
 if zcr_command_exists curl; then
@@ -28,11 +28,11 @@ if [ "$zcr_latest" = "$zcr_current" ]; then
   zcr_print "当前已是最新版本 $zcr_current"
   exit 0
 fi
-zcr_tmp="/data/local/tmp/zcr521-update-$$.zip"
+zcr_tmp="/data/local/tmp/aplm123-update-$$.zip"
 if zcr_command_exists curl; then
-  curl -fsSL --max-time 120 -o "$zcr_tmp" "https://github.com/$zcr_repo/releases/download/v$zcr_latest/ZCR521-Android-AI-MCP-v$zcr_latest-universal.zip"
+  curl -fsSL --max-time 120 -o "$zcr_tmp" "https://github.com/$zcr_repo/releases/download/v$zcr_latest/aplm123-Android-Root-MCP-v$zcr_latest-universal.zip"
 else
-  wget -qO "$zcr_tmp" --timeout=120 "https://github.com/$zcr_repo/releases/download/v$zcr_latest/ZCR521-Android-AI-MCP-v$zcr_latest-universal.zip"
+  wget -qO "$zcr_tmp" --timeout=120 "https://github.com/$zcr_repo/releases/download/v$zcr_latest/aplm123-Android-Root-MCP-v$zcr_latest-universal.zip"
 fi
 zcr_code=$?
 if [ "$zcr_code" -ne 0 ] || [ ! -s "$zcr_tmp" ]; then
@@ -42,7 +42,7 @@ if [ "$zcr_code" -ne 0 ] || [ ! -s "$zcr_tmp" ]; then
 fi
 zcr_prop="$("$ZCR_7ZZ" x -so "$zcr_tmp" module.prop 2>/dev/null)"
 case "$zcr_prop" in
-  *"id=zcr521.android.mcp"*)
+  *"id=aplm123.root.mcp"*)
     ;;
   *)
     rm -f "$zcr_tmp"

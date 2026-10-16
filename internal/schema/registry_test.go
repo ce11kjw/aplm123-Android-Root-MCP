@@ -9,16 +9,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/zcr521/android-ai-mcp/internal/buildinfo"
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
 )
 
 func TestRegistryIsCompleteAndUnique(t *testing.T) {
 	registry := All("2026-07-28")
-	if got, want := len(registry.Tools), 49; got != want {
+	if got, want := len(registry.Tools), 53; got != want {
 		t.Fatalf("tool count %d, want %d", got, want)
 	}
 	seen := map[string]bool{}
-	canonicalName := regexp.MustCompile(`^zcr521_[a-z0-9]+(?:_[a-z0-9]+)*$`)
+	canonicalName := regexp.MustCompile(`^aplm_[a-z0-9]+(?:_[a-z0-9]+)*$`)
 	for _, tool := range registry.Tools {
 		if seen[tool.Name] {
 			t.Fatalf("duplicate tool %s", tool.Name)
@@ -54,8 +54,8 @@ func TestRuntimeSchemaIsProgressiveAndSmaller(t *testing.T) {
 		if tool.OutputSchema != nil || tool.InputSchema["$schema"] != nil {
 			t.Fatalf("runtime tool still contains discovery duplication: %s", tool.Name)
 		}
-		preservesActionContract := tool.Name == "zcr521_network" || tool.Name == "zcr521_skill" ||
-			tool.Name == "zcr521_app_info" || tool.Name == "zcr521_app_manage"
+		preservesActionContract := tool.Name == "aplm_network" || tool.Name == "aplm_skill" ||
+			tool.Name == "aplm_app_info" || tool.Name == "aplm_app_manage"
 		if !preservesActionContract && tool.InputSchema["oneOf"] != nil {
 			t.Fatalf("legacy runtime tool still contains discovery-only oneOf: %s", tool.Name)
 		}
@@ -79,37 +79,37 @@ func TestCheckedInSchemaMatchesRegistry(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(actual, expected) {
-		t.Fatal("schemas/tools.json is stale; regenerate with zcr521d schema --output schemas/tools.json")
+		t.Fatal("schemas/tools.json is stale; regenerate with aplm123d schema --output schemas/tools.json")
 	}
 }
 
 func TestValidateInvocation(t *testing.T) {
-	if err := ValidateInvocation("zcr521_fs_hash", map[string]any{"action": "calculate"}); err != nil {
+	if err := ValidateInvocation("aplm_fs_hash", map[string]any{"action": "calculate"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := ValidateInvocation("zcr521_fs_hash", map[string]any{"action": "delete"}); err == nil {
+	if err := ValidateInvocation("aplm_fs_hash", map[string]any{"action": "delete"}); err == nil {
 		t.Fatal("expected invalid action")
 	}
-	if err := ValidateInvocation("zcr521_fs_hash", map[string]any{"action": "calculate", "unknown": true}); err != nil {
+	if err := ValidateInvocation("aplm_fs_hash", map[string]any{"action": "calculate", "unknown": true}); err != nil {
 		t.Fatalf("legacy tool compatibility changed: %v", err)
 	}
-	if err := ValidateInvocation("zcr521_network", map[string]any{"action": "http", "url": []any{"https://example.test"}}); err == nil {
+	if err := ValidateInvocation("aplm_network", map[string]any{"action": "http", "url": []any{"https://example.test"}}); err == nil {
 		t.Fatal("expected URL type rejection")
 	}
-	if err := ValidateInvocation("zcr521_config", map[string]any{"action": "update", "config": map[string]any{"network": map[string]any{"port": "5322"}}}); err != nil {
+	if err := ValidateInvocation("aplm_config", map[string]any{"action": "update", "config": map[string]any{"network": map[string]any{"port": "5322"}}}); err != nil {
 		t.Fatalf("legacy nested validation compatibility changed: %v", err)
 	}
-	if err := ValidateInvocation("zcr521_network", map[string]any{"action": "ws_connect", "url": "wss://example.test/socket"}); err != nil {
+	if err := ValidateInvocation("aplm_network", map[string]any{"action": "ws_connect", "url": "wss://example.test/socket"}); err != nil {
 		t.Fatalf("valid WebSocket URL rejected: %v", err)
 	}
-	if err := ValidateInvocation("zcr521_skill", map[string]any{"action": "match", "query": "android", "limit": float64(3)}); err != nil {
+	if err := ValidateInvocation("aplm_skill", map[string]any{"action": "match", "query": "android", "limit": float64(3)}); err != nil {
 		t.Fatalf("valid skill match limit rejected: %v", err)
 	}
-	if err := ValidateInvocation("zcr521_skill", map[string]any{"action": "match", "query": "android", "limit": float64(4)}); err == nil {
+	if err := ValidateInvocation("aplm_skill", map[string]any{"action": "match", "query": "android", "limit": float64(4)}); err == nil {
 		t.Fatal("skill match accepted more than three summaries")
 	}
 	for _, args := range []map[string]any{{"action": "match"}, {"action": "get"}, {"action": "forget"}} {
-		if err := ValidateInvocation("zcr521_skill", args); err == nil {
+		if err := ValidateInvocation("aplm_skill", args); err == nil {
 			t.Errorf("skill schema accepted missing required selector: %+v", args)
 		}
 	}
@@ -124,7 +124,7 @@ func TestValidateInvocation(t *testing.T) {
 		"WS send no payload":   {"action": "ws_send", "connectionId": "id"},
 		"WS send two payloads": {"action": "ws_send", "connectionId": "id", "message": "x", "binaryBase64": "eA=="},
 	} {
-		if err := ValidateInvocation("zcr521_network", args); err == nil {
+		if err := ValidateInvocation("aplm_network", args); err == nil {
 			t.Errorf("%s passed schema validation", name)
 		}
 	}
@@ -136,11 +136,11 @@ func TestValidateInvocation(t *testing.T) {
 		"launch by package":    {"action": "launch", "package": "com.android.settings"},
 		"launch with aliases":  {"action": "launch", "package": "com.android.settings", "query": "设置"},
 	} {
-		tool := "zcr521_app_manage"
+		tool := "aplm_app_manage"
 		if strings.HasPrefix(name, "list") {
-			tool = "zcr521_app_list"
+			tool = "aplm_app_list"
 		} else if strings.HasPrefix(name, "info") {
-			tool = "zcr521_app_info"
+			tool = "aplm_app_info"
 		}
 		if err := ValidateInvocation(tool, args); err != nil {
 			t.Errorf("%s failed schema validation: %v", name, err)
@@ -150,11 +150,11 @@ func TestValidateInvocation(t *testing.T) {
 		tool string
 		args map[string]any
 	}{
-		"info without target":        {"zcr521_app_info", map[string]any{"action": "get"}},
-		"launch without target":      {"zcr521_app_manage", map[string]any{"action": "launch"}},
-		"stop by ambiguous name":     {"zcr521_app_manage", map[string]any{"action": "stop", "query": "设置"}},
-		"oversized application name": {"zcr521_app_manage", map[string]any{"action": "launch", "appName": strings.Repeat("x", 257)}},
-		"invalid list limit":         {"zcr521_app_list", map[string]any{"action": "list", "query": "设置", "limit": float64(-1)}},
+		"info without target":        {"aplm_app_info", map[string]any{"action": "get"}},
+		"launch without target":      {"aplm_app_manage", map[string]any{"action": "launch"}},
+		"stop by ambiguous name":     {"aplm_app_manage", map[string]any{"action": "stop", "query": "设置"}},
+		"oversized application name": {"aplm_app_manage", map[string]any{"action": "launch", "appName": strings.Repeat("x", 257)}},
+		"invalid list limit":         {"aplm_app_list", map[string]any{"action": "list", "query": "设置", "limit": float64(-1)}},
 	} {
 		if err := ValidateInvocation(invocation.tool, invocation.args); err == nil {
 			t.Errorf("%s passed schema validation", name)
@@ -166,23 +166,23 @@ func TestRuntimeCompactPreservesNewActionContracts(t *testing.T) {
 	registry := RuntimeCompact("2026-07-28")
 	for _, tool := range registry.Tools {
 		switch tool.Name {
-		case "zcr521_network":
+		case "aplm_network":
 			for _, args := range []map[string]any{{"action": "http"}, {"action": "ws_connect"}} {
 				if err := validateSchemaValue("arguments", args, tool.InputSchema); err == nil {
 					t.Fatalf("runtime network schema accepted missing URL: %+v", args)
 				}
 			}
-		case "zcr521_app_info":
+		case "aplm_app_info":
 			if err := validateSchemaValue("arguments", map[string]any{"action": "get"}, tool.InputSchema); err == nil {
 				t.Fatal("runtime app info schema accepted a missing application target")
 			}
-		case "zcr521_app_manage":
+		case "aplm_app_manage":
 			for _, args := range []map[string]any{{"action": "launch"}, {"action": "stop", "query": "设置"}} {
 				if err := validateSchemaValue("arguments", args, tool.InputSchema); err == nil {
 					t.Fatalf("runtime app management schema accepted an unsafe target: %+v", args)
 				}
 			}
-		case "zcr521_fs_hash":
+		case "aplm_fs_hash":
 			if _, exists := tool.InputSchema["oneOf"]; exists {
 				t.Fatal("legacy runtime schema retained discovery-only oneOf duplication")
 			}

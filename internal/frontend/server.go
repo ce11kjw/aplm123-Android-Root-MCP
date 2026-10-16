@@ -12,17 +12,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/webui"
+	"github.com/aplm123/android-ai-mcp/internal/webui"
 )
 
 const (
-	defaultPort             = 5322
-	defaultWorkDir          = "/storage/emulated/0/zcr521AI"
-	defaultMaxRequestBytes  = int64(8 << 20)
-	defaultMaxUploadBytes   = int64(8 << 30)
-	defaultTransferChunk    = int64(4 << 20)
-	defaultMaxConcurrent    = 32
-	anonymousRootLANWarning = "安全警告：此服务在局域网内匿名提供完整 Root 能力；同一网络中的任何设备都可能控制本机。请勿连接不可信 Wi-Fi，且不要将端口映射到公网。"
+	defaultPort            = 5322
+	defaultWorkDir         = "/storage/emulated/0/aplm123AI"
+	defaultMaxRequestBytes = int64(8 << 20)
+	defaultMaxUploadBytes  = int64(8 << 30)
+	defaultTransferChunk   = int64(4 << 20)
+	defaultMaxConcurrent   = 32
+	// 流式连接单独给配额，默认比普通调用宽松一些：
+	// MCP 客户端经常会同时挂多个流，而它们几乎不消耗 CPU。
+	defaultMaxStreams = 64
+	// 流空闲判定阈值：WebUI 用它标注“疑似僵尸连接”并允许清理。
+	defaultStreamIdleTimeout = 10 * time.Minute
+	anonymousRootLANWarning  = "安全警告：此服务在局域网内匿名提供完整 Root 能力；同一网络中的任何设备都可能控制本机。请勿连接不可信 Wi-Fi，且不要将端口映射到公网。"
 )
 
 // Server is the complete public HTTP frontend.
@@ -32,6 +37,15 @@ type Server struct {
 	access    *accessPolicy
 	slots     chan struct{}
 	transfers *TransferManager
+
+	// streamSlots 是长连接（Streamable HTTP / SSE）的独立配额。
+	//
+	// 历史问题：长短连接共用一个 slots 池时，客户端不主动关闭的流式连接
+	// 会把 32 个槽位全部占满，之后连 /health 这种瞬时请求都会返回
+	// CONCURRENCY_LIMIT，只能重启进程才能恢复。把两者分开后，
+	// 流连接再多也不会阻塞普通工具调用。
+	streamSlots chan struct{}
+	streams     *streamRegistry
 }
 
 // New validates all mandatory integration points and constructs a frontend.
@@ -66,6 +80,9 @@ func New(options Options) (*Server, error) {
 		access:    newAccessPolicy(options.ListenAddr, options.AllowedOrigins),
 		slots:     make(chan struct{}, options.MaxConcurrent),
 		transfers: transfers,
+
+		streamSlots: make(chan struct{}, options.MaxStreams),
+		streams:     newStreamRegistry(options.StreamIdleTimeout),
 	}
 	server.routes()
 	return server, nil
@@ -96,6 +113,12 @@ func applyDefaults(options *Options) {
 	if options.MaxConcurrent <= 0 {
 		options.MaxConcurrent = defaultMaxConcurrent
 	}
+	if options.MaxStreams <= 0 {
+		options.MaxStreams = defaultMaxStreams
+	}
+	if options.StreamIdleTimeout <= 0 {
+		options.StreamIdleTimeout = defaultStreamIdleTimeout
+	}
 	if options.UploadTTL <= 0 {
 		options.UploadTTL = 24 * time.Hour
 	}
@@ -108,7 +131,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("/health", exactPath("/health", s.health))
 	s.mux.HandleFunc("/version", exactPath("/version", s.version))
 	s.mux.HandleFunc("/status", exactPath("/status", s.status))
-	s.mux.HandleFunc("/mcp", exactPath("/mcp", s.mcp))
+	// /mcp 外面套一层 2026-07-28 协议的 _meta 兼容层：
+	// 客户端只发 Mcp-Protocol-Version 头、不在请求体里重复 _meta 时，
+	// 由它补齐后再交给 SDK handler，避免能力探测阶段就被 400 拒绝。
+	s.mux.HandleFunc("/mcp", exactPath("/mcp", normalizeNewProtocolMeta(s.mcp)))
 	s.mux.HandleFunc("/sse", exactPath("/sse", s.legacySSE))
 	s.mux.HandleFunc("/messages", exactPath("/messages", s.legacyMessages))
 	s.mux.HandleFunc("/transfer/upload", exactPath("/transfer/upload", s.transfers.handleCreateUpload))
@@ -116,6 +142,13 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("/transfer/download/", s.transfers.handleDownload)
 	// Compatibility aliases never appear in newly generated URLs.
 	s.mux.HandleFunc("/transfer/uploads", exactPath("/transfer/uploads", s.transfers.handleCreateUpload))
+	// WebUI 面板与控制端点。全部位于 exemptPaths 白名单，
+	// 因此在连接池耗尽时仍可访问——用于诊断并一键释放。
+	s.mux.HandleFunc("/ui", s.uiPage)
+	s.mux.HandleFunc("/api/ui", exactPath("/api/ui", s.uiSummary))
+	// /api/streams 同时支持 GET（列表）与 POST/DELETE（断开），
+	// 这里按方法分派，避免落到兜底静态处理器变成 405。
+	s.mux.HandleFunc("/api/streams", exactPath("/api/streams", s.uiStreamsDispatch))
 	s.mux.HandleFunc("/transfer/uploads/", s.transfers.handleUpload)
 	s.mux.HandleFunc("/transfer/files/", s.transfers.handleDownload)
 	s.mux.Handle("/", webui.New())
@@ -143,14 +176,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusForbidden, "NETWORK_POLICY_DENIED", err.Error())
 		return
 	}
-	select {
-	case s.slots <- struct{}{}:
-		defer func() { <-s.slots }()
-	default:
-		w.Header().Set("Retry-After", "1")
-		writeAPIError(w, http.StatusTooManyRequests, "CONCURRENCY_LIMIT", "并发连接已达到上限")
+	// 连接准入：管理端点免占配额，长连接与短请求分开计数。
+	// 这样即使大量流式连接挂着不关，/health 与普通工具调用仍可正常工作
+	//（此前共用单池时会被流连接占满，只能重启恢复）。
+	release, admitted := s.admit(w, r)
+	if !admitted {
 		return
 	}
+	defer release()
 	if r.Body != nil && r.Method != http.MethodGet && r.Method != http.MethodHead {
 		limit := s.options.MaxRequestBytes
 		if r.Method == http.MethodPut &&
@@ -173,7 +206,7 @@ func setSecurityHeaders(header http.Header) {
 	header.Set("Referrer-Policy", "no-referrer")
 	header.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 	header.Set("Cross-Origin-Resource-Policy", "same-origin")
-	header.Set("X-ZCR521-Anonymous-Root-Warning", "enabled")
+	header.Set("X-aplm123-Anonymous-Root-Warning", "enabled")
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
@@ -193,8 +226,8 @@ func (s *Server) version(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"name":              "ZCR521 AI MCP",
-		"author":            "小骨@Xiaogu_zcr521",
+		"name":              "aplm123 Root MCP",
+		"author":            "@aplm123",
 		"version":           s.options.Version,
 		"protocolCurrent":   s.options.ProtocolCurrent,
 		"protocolPrevious":  s.options.ProtocolPrevious,
@@ -233,11 +266,32 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	payload["workDir"] = s.options.WorkDir
 	payload["anonymousRootLAN"] = true
 	payload["securityWarning"] = anonymousRootLANWarning
+	// 连接池水位：让 WebUI 与排障一眼看出「卡死」到底卡在哪一层。
+	payload["connections"] = s.connectionStatus()
 	if degraded, _ := payload["securityDegraded"].(bool); degraded {
 		reason, _ := payload["securityDegradationReason"].(string)
 		payload["securityWarning"] = anonymousRootLANWarning + " frontend 降权失败，当前以 Root 运行：" + reason
 	}
 	writeJSON(w, http.StatusOK, payload)
+}
+
+// connectionStatus 汇报两类连接配额的实时占用情况。
+func (s *Server) connectionStatus() map[string]any {
+	streams := s.streams.snapshot()
+	return map[string]any{
+		"shortRequests": map[string]any{
+			"inUse": len(s.slots),
+			"limit": cap(s.slots),
+		},
+		"streams": map[string]any{
+			"inUse":        len(s.streamSlots),
+			"limit":        cap(s.streamSlots),
+			"registered":   len(streams),
+			"idleTimeoutS": int(s.options.StreamIdleTimeout.Seconds()),
+		},
+		// 免占配额的管理端点，用于过载时自证存活。
+		"exempt": []string{"/health", "/status", "/version", "/ui", "/api/ui", "/api/streams"},
+	}
 }
 
 func cloneMap(source map[string]any) map[string]any {

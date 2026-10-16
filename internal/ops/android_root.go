@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
 )
 
 type rootModule struct {
@@ -28,11 +30,11 @@ type rootModule struct {
 
 func (m *Manager) rootOperation(ctx context.Context, req Request) Result {
 	switch req.Tool {
-	case "zcr521_root_info":
+	case "aplm_root_info":
 		return m.rootInfo(ctx, req)
-	case "zcr521_root_module":
+	case "aplm_root_module":
 		return m.rootModuleOperation(ctx, req)
-	case "zcr521_systemless":
+	case "aplm_systemless":
 		return m.systemlessOperation(ctx, req)
 	default:
 		return fail("UNKNOWN_TOOL", "未知 Root 工具", errors.New(req.Tool), "dispatcher")
@@ -393,7 +395,7 @@ func (m *Manager) systemlessOperation(ctx context.Context, req Request) Result {
 			"mountNamespace": readLinkValue("/proc/self/ns/mnt"),
 		}, "procfs_mount_probe")
 	case "list":
-		stagedRoot := "/data/adb/modules/zcr521.android.mcp/system"
+		stagedRoot := buildinfo.EffectiveModuleDir() + "/system"
 		staged := make([]string, 0)
 		_ = filepath.WalkDir(stagedRoot, func(path string, entry os.DirEntry, walkErr error) error {
 			if walkErr != nil || path == stagedRoot {
@@ -411,7 +413,7 @@ func (m *Manager) systemlessOperation(ctx context.Context, req Request) Result {
 		active := make([]string, 0)
 		for _, line := range strings.Split(readFirstFile("/proc/self/mountinfo"), "\n") {
 			if strings.Contains(line, " - overlay ") ||
-				strings.Contains(line, "/data/adb/modules/zcr521.android.mcp") {
+				strings.Contains(line, buildinfo.EffectiveModuleDir()) {
 				active = append(active, line)
 				if len(active) >= 2048 {
 					break
@@ -627,7 +629,7 @@ func systemlessStagePath(target string) (string, error) {
 	if relative == "" || relative == "." || strings.HasPrefix(relative, "..") {
 		return "", errors.New("target 必须指向系统分区内的具体文件或目录")
 	}
-	root := "/data/adb/modules/zcr521.android.mcp/system"
+	root := buildinfo.EffectiveModuleDir() + "/system"
 	staged := filepath.Join(root, filepath.FromSlash(relative))
 	rel, err := filepath.Rel(root, staged)
 	if err != nil || rel == ".." || filepath.IsAbs(rel) || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {

@@ -18,7 +18,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/zcr521/android-ai-mcp/internal/atomicfile"
+	"github.com/aplm123/android-ai-mcp/internal/atomicfile"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -83,7 +83,7 @@ func (m *Manager) queryAndroidApplications(ctx context.Context, user, query stri
 	}
 	result := m.runCommand(ctx, commandSpec{
 		Name: "/system/bin/app_process",
-		Args: []string{"/system/bin", "com.zcr521.mcp.AppQuery", user, query,
+		Args: []string{"/system/bin", "com.aplm123.mcp.AppQuery", user, query,
 			strconv.Itoa(offset), strconv.Itoa(limit), strconv.Itoa(systemFilter)},
 		Env:      map[string]string{"CLASSPATH": helperPath},
 		Timeout:  timeout,

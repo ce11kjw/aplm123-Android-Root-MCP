@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/config"
-	"github.com/zcr521/android-ai-mcp/internal/knowledge"
-	"github.com/zcr521/android-ai-mcp/internal/model"
-	"github.com/zcr521/android-ai-mcp/internal/tasks"
+	"github.com/aplm123/android-ai-mcp/internal/config"
+	"github.com/aplm123/android-ai-mcp/internal/knowledge"
+	"github.com/aplm123/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/tasks"
 )
 
 func TestCompletedCallsLearnButAcceptanceAndControlCallsDoNot(t *testing.T) {
@@ -36,17 +36,17 @@ func TestCompletedCallsLearnButAcceptanceAndControlCallsDoNot(t *testing.T) {
 	}
 	defer service.Close()
 	ctx := context.Background()
-	written := service.Call(ctx, "zcr521_fs_write", map[string]any{"action": "create", "path": "learn.txt", "content": "learn me", "createParents": true})
+	written := service.Call(ctx, "aplm_fs_write", map[string]any{"action": "create", "path": "learn.txt", "content": "learn me", "createParents": true})
 	if !written.Success {
 		t.Fatalf("write failed: %+v", written)
 	}
-	accepted := service.Call(ctx, "zcr521_archive", map[string]any{"action": "create", "destination": "learn.zip", "sources": []string{"learn.txt"}, "format": "zip", "background": true})
+	accepted := service.Call(ctx, "aplm_archive", map[string]any{"action": "create", "destination": "learn.zip", "sources": []string{"learn.txt"}, "format": "zip", "background": true})
 	if !accepted.Success || accepted.TaskID == "" {
 		t.Fatalf("background not accepted: %+v", accepted)
 	}
 	deadline := time.Now().Add(5 * time.Second)
 	for {
-		state := service.Call(ctx, "zcr521_task", map[string]any{"action": "get", "taskId": accepted.TaskID})
+		state := service.Call(ctx, "aplm_task", map[string]any{"action": "get", "taskId": accepted.TaskID})
 		raw, _ := json.Marshal(state.Data)
 		if strings.Contains(string(raw), `"arguments"`) {
 			t.Fatalf("task get exposed durable arguments: %s", raw)
@@ -63,7 +63,7 @@ func TestCompletedCallsLearnButAcceptanceAndControlCallsDoNot(t *testing.T) {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	listed := service.Call(ctx, "zcr521_task", map[string]any{"action": "list", "limit": float64(100)})
+	listed := service.Call(ctx, "aplm_task", map[string]any{"action": "list", "limit": float64(100)})
 	listedRaw, _ := json.Marshal(listed.Data)
 	if strings.Contains(string(listedRaw), `"arguments"`) {
 		t.Fatalf("task list exposed durable arguments: %s", listedRaw)
@@ -72,11 +72,11 @@ func TestCompletedCallsLearnButAcceptanceAndControlCallsDoNot(t *testing.T) {
 	if err != nil || strings.Contains(string(snapshot), `"arguments"`) {
 		t.Fatalf("terminal task snapshot retained arguments: %s err=%v", snapshot, err)
 	}
-	stats := service.Call(ctx, "zcr521_skill", map[string]any{"action": "stats"})
+	stats := service.Call(ctx, "aplm_skill", map[string]any{"action": "stats"})
 	if !stats.Success || stats.Data.(map[string]any)["receipts"] != 2 {
 		t.Fatalf("unexpected learning stats: %+v", stats)
 	}
-	web := service.Call(ctx, "zcr521_network", map[string]any{"action": "interfaces"})
+	web := service.Call(ctx, "aplm_network", map[string]any{"action": "interfaces"})
 	hints, ok := web.Meta["skillHints"].([]knowledge.Match)
 	if !ok || len(hints) == 0 {
 		t.Fatalf("web call received no automatic skill hints: %+v", web.Meta)
@@ -102,16 +102,16 @@ func TestSensitiveBackgroundArgumentsAreRejectedAndNeverPersisted(t *testing.T) 
 	}
 	defer service.Close()
 	secret := "never-persist-this-secret"
-	result := service.Call(context.Background(), "zcr521_shell", map[string]any{"action": "exec", "command": "printf " + secret, "background": true})
+	result := service.Call(context.Background(), "aplm_shell", map[string]any{"action": "exec", "command": "printf " + secret, "background": true})
 	if result.Success || result.Code != "BACKGROUND_SENSITIVE_ARGUMENTS_UNSUPPORTED" || result.TaskID != "" {
 		t.Fatalf("sensitive background task was accepted: %+v", result)
 	}
-	script := service.Call(context.Background(), "zcr521_script", map[string]any{"action": "run", "script": "printf " + secret, "background": true})
+	script := service.Call(context.Background(), "aplm_script", map[string]any{"action": "run", "script": "printf " + secret, "background": true})
 	if script.Success || script.Code != "BACKGROUND_SENSITIVE_ARGUMENTS_UNSUPPORTED" {
 		t.Fatalf("script-bearing background task was accepted: %+v", script)
 	}
 	pathToken := strings.Repeat("a", 64)
-	network := service.Call(context.Background(), "zcr521_download", map[string]any{"action": "start", "url": "https://example.test/" + pathToken, "path": "blocked.bin", "background": true})
+	network := service.Call(context.Background(), "aplm_download", map[string]any{"action": "start", "url": "https://example.test/" + pathToken, "path": "blocked.bin", "background": true})
 	if network.Success || network.Code != "BACKGROUND_SENSITIVE_ARGUMENTS_UNSUPPORTED" {
 		t.Fatalf("opaque URL credential path was accepted: %+v", network)
 	}
@@ -155,7 +155,7 @@ func TestRestartDoesNotReplayUncertainNetworkPOST(t *testing.T) {
 	id := "00000000-0000-4000-8000-000000000088"
 	rawArgs, _ := json.Marshal(map[string]any{"action": "http", "url": server.URL, "method": "POST", "body": "one-shot"})
 	now := time.Now().UTC()
-	stale := tasks.Task{ID: id, Tool: "zcr521_network", Arguments: rawArgs, Status: tasks.StatusRunning, Durable: true, CreatedAt: now, StartedAt: now, UpdatedAt: now}
+	stale := tasks.Task{ID: id, Tool: "aplm_network", Arguments: rawArgs, Status: tasks.StatusRunning, Durable: true, CreatedAt: now, StartedAt: now, UpdatedAt: now}
 	rawTask, _ := json.Marshal(stale)
 	taskDir := filepath.Join(cfg.Paths.StateDir, "tasks")
 	if err := os.MkdirAll(taskDir, 0o700); err != nil {
@@ -193,7 +193,7 @@ func TestRestartDoesNotReexecuteCompletedOrUncertainDestructiveTask(t *testing.T
 			args := map[string]any{"action": "create", "path": "must-not-run.txt", "content": "unsafe"}
 			rawArgs, _ := json.Marshal(args)
 			now := time.Now().UTC()
-			stale := tasks.Task{ID: id, Tool: "zcr521_fs_write", Arguments: rawArgs, Status: tasks.StatusRunning, Durable: true, CreatedAt: now, StartedAt: now, UpdatedAt: now}
+			stale := tasks.Task{ID: id, Tool: "aplm_fs_write", Arguments: rawArgs, Status: tasks.StatusRunning, Durable: true, CreatedAt: now, StartedAt: now, UpdatedAt: now}
 			rawTask, _ := json.Marshal(stale)
 			taskDir := filepath.Join(cfg.Paths.StateDir, "tasks")
 			if err := os.MkdirAll(taskDir, 0o700); err != nil {

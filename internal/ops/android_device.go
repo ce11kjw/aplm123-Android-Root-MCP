@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
 )
 
 func (m *Manager) deviceOperation(ctx context.Context, req Request) Result {
@@ -460,9 +462,9 @@ func (m *Manager) logOperation(ctx context.Context, req Request) Result {
 	case "kernel", "dmesg":
 		return m.runAndroidRoot(ctx, commandVariant{Name: "dmesg", Args: []string{}, Strategy: "dmesg"})
 	case "module":
-		path := "/data/adb/modules/zcr521.android.mcp"
+		path := buildinfo.EffectiveModuleDir()
 		logs := make(map[string]string)
-		for _, name := range []string{"service.log", "install.log", "zcr521.log"} {
+		for _, name := range []string{"service.log", "install.log", "aplm123.log"} {
 			if raw, readErr := os.ReadFile(filepath.Join(path, name)); readErr == nil {
 				logs[name] = string(raw)
 			}
@@ -509,7 +511,7 @@ func (m *Manager) diagnosticsOperation(ctx context.Context, req Request) Result 
 	}
 	report := map[string]any{
 		"generatedAt":  time.Now().UTC().Format(time.RFC3339Nano),
-		"root":         commandData(m.rootInfo(ctx, Request{Tool: "zcr521_root_info", Args: map[string]any{"action": "get"}})),
+		"root":         commandData(m.rootInfo(ctx, Request{Tool: "aplm_root_info", Args: map[string]any{"action": "get"}})),
 		"selinux":      detectSELinux(),
 		"framework":    detectRootFramework(),
 		"workDir":      diagnosticPath(m.cfg.WorkDir),

@@ -37,7 +37,7 @@ EXPECTED_ENTRIES = set(
     REQUIRED
     + LEGAL_REQUIRED
     + ("common.sh", "post-fs-data.sh", "systemless.sh", "update.sh")
-    + tuple(f"bin/{abi}/{binary}" for abi in ABIS for binary in ("zcr521d", "7zz"))
+    + tuple(f"bin/{abi}/{binary}" for abi in ABIS for binary in ("aplm123d", "7zz"))
 )
 NOTICE_SECTIONS = {
     "THIRD_PARTY_NOTICES": "2aa145dbe7c71d1f1c7fda3388d462140bc7c3cab4dc731a4fb0fe6483fd305e",
@@ -155,7 +155,7 @@ def main() -> None:
         prop_data = archive.read("module.prop")
         prop_digest = hashlib.sha256(prop_data).hexdigest().encode("ascii")
         for abi in ABIS:
-            for binary in ("zcr521d", "7zz"):
+            for binary in ("aplm123d", "7zz"):
                 name = f"bin/{abi}/{binary}"
                 if name not in names:
                     raise SystemExit(f"ZIP 缺少 {name}")
@@ -164,7 +164,7 @@ def main() -> None:
                 mode = archive.getinfo(name).external_attr >> 16
                 if mode & stat.S_IXUSR == 0:
                     raise SystemExit(f"{name} 没有执行位")
-                if binary == "zcr521d" and prop_digest not in data:
+                if binary == "aplm123d" and prop_digest not in data:
                     raise SystemExit(f"{name} 未内置 module.prop SHA-256")
         for name in names:
             if name.endswith(".sh") or name.endswith("update-binary") or name.endswith("updater-script"):
@@ -180,25 +180,32 @@ def main() -> None:
                     raise SystemExit(f"{name} 仍含注释: {line}")
         prop = prop_data.decode("utf-8")
         expected_prop = (
-            "id=zcr521.android.mcp\n"
-            "name=ZCR521 AI MCP\n"
-            "version=0.02\n"
-            "versionCode=2\n"
-            "author=小骨@Xiaogu_zcr521\n"
-            "description=通用 root MCP扩展 （让AI管理手机）\n"
+            "id=aplm123.root.mcp\n"
+            "name=aplm123 Root MCP\n"
+            "version=0.08\n"
+            "versionCode=2026092505\n"
+            "author=__AUTHOR__\n"
+            "description=通用 root MCP 扩展，内置管理器 WebUI 与浏览器控制台（让AI管理手机）\n"
         )
-        if prop != expected_prop:
+        # module.prop 的 author 是自定义值，这里只校验其余字段固定。
+        import re as _re
+        normalized = _re.sub(r"^author=.*$", "author=__AUTHOR__", prop, flags=_re.M)
+        if normalized != expected_prop:
             raise SystemExit("module.prop 元数据与指定内容不一致")
         action = archive.read("action.sh").decode("utf-8")
         for forbidden in ("音量加", "音量减", "查看 MCP 运行状态", "启动服务", "恢复默认配置"):
             if forbidden in action:
                 raise SystemExit("action.sh 仍含旧操作菜单")
-        if "作者:小骨@Xiaogu_zcr521" not in action or "当前版本: 0.02" not in action:
-            raise SystemExit("action.sh 未显示指定作者或版本")
+        # 安装脚本不应再包含原作者署名或社群跳转。
+        for forbidden in ("小骨", "Xiaogu", "tg://", "telegram"):
+            if forbidden in action:
+                raise SystemExit(f"action.sh 仍含原作者信息: {forbidden}")
+        if "当前版本: 0.08" not in action:
+            raise SystemExit("action.sh 未显示版本")
         if "zcr_print_summary" not in action:
             raise SystemExit("action.sh 未保留运行摘要")
         common = archive.read("common.sh").decode("utf-8")
-        if "/data/adb/zcr521-mcp/MCP地址.txt" not in common:
+        if "/data/adb/aplm123-mcp/MCP地址.txt" not in common:
             raise SystemExit("未生成指定 MCP 地址文件")
         if "局域网地址：当前未获取" in common:
             raise SystemExit("地址文件仍会写入未获取占位值")
@@ -206,15 +213,16 @@ def main() -> None:
             if f'"$ZCR_WORK_DIR/{child}"' in common:
                 raise SystemExit(f"安装脚本仍会预创建工作区子目录: {child}")
         customize = archive.read("customize.sh").decode("utf-8")
-        if "tg://resolve?domain=Xiaogu_zcr521" not in customize:
-            raise SystemExit("安装脚本未尝试跳转官方 TG")
+        for forbidden in ("小骨", "Xiaogu", "tg://", "telegram"):
+            if forbidden in customize:
+                raise SystemExit(f"customize.sh 仍含原作者信息或社群跳转: {forbidden}")
         if "sepolicy.rule" in names:
             raise SystemExit("模块仍包含仅注释的 sepolicy.rule")
         if any(name == "licenses/" or name.startswith("licenses/") for name in names):
             raise SystemExit("模块仍包含 licenses 子目录")
         if "post-fs-data.sh" in names:
             script = archive.read("post-fs-data.sh").decode("utf-8")
-            forbidden = ("sleep 30", "zcr521d supervisor", "setenforce 0")
+            forbidden = ("sleep 30", "aplm123d supervisor", "setenforce 0")
             if any(item in script for item in forbidden):
                 raise SystemExit("post-fs-data.sh 含阻塞启动或禁用 SELinux")
     print(f"OK {path}")

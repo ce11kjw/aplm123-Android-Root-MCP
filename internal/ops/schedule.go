@@ -191,7 +191,7 @@ func (m *Manager) parseSchedule(args map[string]any) (*scheduleState, error) {
 		if !exists || command == "" {
 			return nil, errors.New("定时任务需要 targetTool/tool 或 command")
 		}
-		targetTool = "zcr521_shell"
+		targetTool = "aplm_shell"
 		targetArgs = map[string]any{"action": "exec", "command": command}
 	} else if raw, exists := args["targetArgs"]; exists {
 		typed, ok := raw.(map[string]any)
@@ -201,8 +201,8 @@ func (m *Manager) parseSchedule(args map[string]any) (*scheduleState, error) {
 		targetArgs = copyArgs(typed)
 	}
 	targetTool = normalizeTool(targetTool)
-	if targetTool == "zcr521_schedule" {
-		return nil, errors.New("定时任务不能递归调用 zcr521_schedule")
+	if targetTool == "aplm_schedule" {
+		return nil, errors.New("定时任务不能递归调用 aplm_schedule")
 	}
 	enabled, err := argBool(args, "enabled", true)
 	if err != nil {

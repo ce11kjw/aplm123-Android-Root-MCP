@@ -15,13 +15,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zcr521/android-ai-mcp/internal/buildinfo"
-	"github.com/zcr521/android-ai-mcp/internal/config"
-	"github.com/zcr521/android-ai-mcp/internal/knowledge"
-	"github.com/zcr521/android-ai-mcp/internal/model"
-	"github.com/zcr521/android-ai-mcp/internal/ops"
-	"github.com/zcr521/android-ai-mcp/internal/schema"
-	"github.com/zcr521/android-ai-mcp/internal/tasks"
+	"github.com/aplm123/android-ai-mcp/internal/buildinfo"
+	"github.com/aplm123/android-ai-mcp/internal/config"
+	"github.com/aplm123/android-ai-mcp/internal/knowledge"
+	"github.com/aplm123/android-ai-mcp/internal/model"
+	"github.com/aplm123/android-ai-mcp/internal/ops"
+	"github.com/aplm123/android-ai-mcp/internal/schema"
+	"github.com/aplm123/android-ai-mcp/internal/tasks"
 )
 
 type Service struct {
@@ -108,7 +108,7 @@ func (s *Service) Call(ctx context.Context, tool string, args map[string]any) mo
 	var result model.Result
 	matches := s.knowledge.Match(tool+" "+stringArgument(args, "action"), 3)
 	switch tool {
-	case "zcr521_status":
+	case "aplm_status":
 		status, err := s.Status(ctx)
 		if err != nil {
 			result = model.Failure("STATUS_FAILED", "读取状态失败", "StatusError", err.Error())
@@ -116,11 +116,11 @@ func (s *Service) Call(ctx context.Context, tool string, args map[string]any) mo
 			result = model.Success("OK", "状态读取成功", status)
 			result.Strategy = "broker"
 		}
-	case "zcr521_config":
+	case "aplm_config":
 		result = s.configCall(args)
-	case "zcr521_task":
+	case "aplm_task":
 		result = s.taskCall(ctx, args)
-	case "zcr521_skill":
+	case "aplm_skill":
 		result = s.skillCall(args)
 	default:
 		background, _ := args["background"].(bool)
@@ -159,27 +159,27 @@ func (s *Service) Call(ctx context.Context, tool string, args map[string]any) mo
 			if result.Meta == nil {
 				result.Meta = map[string]any{}
 			}
-			result.Meta["knowledgeWarning"] = "完成结果已返回，但长期记忆回执未保存；请检查 zcr521_skill.stats.lastPersistenceError"
+			result.Meta["knowledgeWarning"] = "完成结果已返回，但长期记忆回执未保存；请检查 aplm_skill.stats.lastPersistenceError"
 		}
 	}
-	if len(matches) > 0 && tool != "zcr521_skill" {
+	if len(matches) > 0 && tool != "aplm_skill" {
 		if result.Meta == nil {
 			result.Meta = map[string]any{}
 		}
 		result.Meta["skillHints"] = matches
-		result.Meta["skillLoading"] = "摘要已自动匹配；仅在需要时调用 zcr521_skill.get 加载一个完整技能。"
+		result.Meta["skillLoading"] = "摘要已自动匹配；仅在需要时调用 aplm_skill.get 加载一个完整技能。"
 	}
 	return result
 }
 
 func shouldLearnCompletion(tool string, args map[string]any, result model.Result) bool {
-	if result.TaskID != "" || tool == "zcr521_skill" || tool == "zcr521_task" || tool == "zcr521_status" {
+	if result.TaskID != "" || tool == "aplm_skill" || tool == "aplm_task" || tool == "aplm_status" {
 		return false
 	}
 	action, _ := args["action"].(string)
 	// High-frequency health/config reads add no reusable execution knowledge.
 	// Mutations, probes and all substantive operations are still journaled.
-	return !(tool == "zcr521_capabilities" && action == "get") && !(tool == "zcr521_config" && action == "get")
+	return !(tool == "aplm_capabilities" && action == "get") && !(tool == "aplm_config" && action == "get")
 }
 
 func (s *Service) Status(ctx context.Context) (map[string]any, error) {
@@ -246,11 +246,11 @@ func (s *Service) Status(ctx context.Context) (map[string]any, error) {
 
 func (s *Service) collectProbe(ctx context.Context) map[string]any {
 	capability := s.operations.Execute(ctx, ops.Request{
-		Tool: "zcr521_capabilities",
+		Tool: "aplm_capabilities",
 		Args: map[string]any{"action": "get"},
 	})
 	device := s.operations.Execute(ctx, ops.Request{
-		Tool: "zcr521_device_info",
+		Tool: "aplm_device_info",
 		Args: map[string]any{"action": "get"},
 	})
 	result := map[string]any{
@@ -584,7 +584,7 @@ func (s *Service) configCall(args map[string]any) model.Result {
 		cfg := s.Config()
 		destination, _ := args["destination"].(string)
 		if destination == "" {
-			destination = filepath.Join(cfg.Paths.WorkDir, "output", "zcr521-config.json")
+			destination = filepath.Join(cfg.Paths.WorkDir, "output", "aplm123-config.json")
 		} else if !filepath.IsAbs(destination) {
 			destination = filepath.Join(cfg.Paths.WorkDir, destination)
 		}
