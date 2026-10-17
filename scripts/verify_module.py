@@ -189,11 +189,24 @@ def main() -> None:
                         continue
                     raise SystemExit(f"{name} 仍含注释: {line}")
         prop = prop_data.decode("utf-8")
+        # version / versionCode 随发布递增，不写死在脚本里：
+        # 从 module.prop 自身取值，再校验其余字段与固定文案一致。
+        prop_version = ""
+        prop_version_code = ""
+        for line in prop.splitlines():
+            if line.startswith("version="):
+                prop_version = line[len("version="):]
+            elif line.startswith("versionCode="):
+                prop_version_code = line[len("versionCode="):]
+        if not prop_version or not prop_version_code:
+            raise SystemExit("module.prop 缺少 version 或 versionCode")
+        if not prop_version_code.isdigit():
+            raise SystemExit("module.prop 的 versionCode 必须是数字")
         expected_prop = (
             "id=aplm123.root.mcp\n"
             "name=aplm123 Root MCP\n"
-            "version=0.08\n"
-            "versionCode=2026092505\n"
+            f"version={prop_version}\n"
+            f"versionCode={prop_version_code}\n"
             "author=__AUTHOR__\n"
             "description=通用 root MCP 扩展，内置管理器 WebUI 与浏览器控制台（让AI管理手机）\n"
         )
@@ -210,8 +223,11 @@ def main() -> None:
         for forbidden in ("小骨", "Xiaogu", "tg://", "telegram"):
             if forbidden in action:
                 raise SystemExit(f"action.sh 仍含原作者信息: {forbidden}")
-        if "当前版本: 0.08" not in action:
-            raise SystemExit("action.sh 未显示版本")
+        # action.sh 必须从 module.prop 动态显示版本，而不是写死字面量。
+        if "当前版本: $zcr_version" not in action:
+            raise SystemExit("action.sh 未动态显示版本")
+        if 'sed -n \'s/^version=//p\'' not in action:
+            raise SystemExit("action.sh 未从 module.prop 读取版本")
         if "zcr_print_summary" not in action:
             raise SystemExit("action.sh 未保留运行摘要")
         common = archive.read("common.sh").decode("utf-8")
