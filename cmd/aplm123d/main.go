@@ -797,7 +797,10 @@ func printVersion() {
 		"version":   buildinfo.Version,
 		"commit":    buildinfo.Commit,
 		"buildTime": buildinfo.BuildTime,
-		"protocols": []string{buildinfo.ProtocolCurrent, buildinfo.ProtocolPrevious, buildinfo.ProtocolLegacySSE},
+		// 读出来才能让链接期 -X 注入的值留在二进制里：
+		// 未被引用的变量会被链接器消除，而模块包校验会检查这个指纹是否存在。
+		"modulePropSha256": buildinfo.ModulePropSHA256,
+		"protocols":        []string{buildinfo.ProtocolCurrent, buildinfo.ProtocolPrevious, buildinfo.ProtocolLegacySSE},
 	})
 }
 

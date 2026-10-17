@@ -6,7 +6,7 @@ package buildinfo
 const (
 	Name              = "aplm123 Root MCP"
 	ModuleID          = "aplm123.root.mcp"
-	DefaultVersion    = "0.08"
+	DefaultVersion    = "0.09"
 	ProtocolCurrent   = "2026-07-28"
 	ProtocolPrevious  = "2025-11-25"
 	ProtocolLegacySSE = "2024-11-05"
