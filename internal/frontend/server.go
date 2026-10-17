@@ -35,6 +35,7 @@ type Server struct {
 	options   Options
 	mux       *http.ServeMux
 	access    *accessPolicy
+	tokens    *tokenStore
 	slots     chan struct{}
 	transfers *TransferManager
 
@@ -77,13 +78,32 @@ func New(options Options) (*Server, error) {
 	server := &Server{
 		options:   options,
 		mux:       http.NewServeMux(),
-		access:    newAccessPolicy(options.ListenAddr, options.AllowedOrigins),
+		access:    nil, // 下面按需构造（可能带 token 存储）
 		slots:     make(chan struct{}, options.MaxConcurrent),
 		transfers: transfers,
 
 		streamSlots: make(chan struct{}, options.MaxStreams),
 		streams:     newStreamRegistry(options.StreamIdleTimeout),
 	}
+	// token 存储按配置构造：TokenPath 为空时不启用（测试用）。
+	var tokens *tokenStore
+	if strings.TrimSpace(options.TokenPath) != "" {
+		store, err := newTokenStore(options.TokenPath)
+		if err != nil {
+			return nil, fmt.Errorf("frontend: 初始化 token 存储: %w", err)
+		}
+		// 首次启动生成 token；失败则拒绝启动，避免「要求认证却没有凭证」。
+		if _, err := store.ensure(); err != nil {
+			return nil, fmt.Errorf("frontend: 准备 bearer token: %w", err)
+		}
+		tokens = store
+	}
+	server.tokens = tokens
+	server.access = newAccessPolicy(options.ListenAddr, options.AllowedOrigins, SecurityPolicy{
+		RequireToken:      options.RequireToken,
+		LoopbackAnonymous: options.LoopbackAnonymous,
+		Tokens:            tokens,
+	})
 	server.routes()
 	return server, nil
 }
@@ -173,6 +193,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.access.validate(r); err != nil {
+		// 认证失败与来源策略失败要分开报：401 提示客户端补凭证，
+		// 403 表示来源本身不被接受，前者可重试、后者重试无意义。
+		if errors.Is(err, errUnauthorized) || errors.Is(err, errTokenMissing) {
+			w.Header().Set("WWW-Authenticate", `Bearer realm="aplm123"`)
+			writeAPIError(w, http.StatusUnauthorized, "AUTH_REQUIRED", "需要有效的 bearer token")
+			return
+		}
 		writeAPIError(w, http.StatusForbidden, "NETWORK_POLICY_DENIED", err.Error())
 		return
 	}

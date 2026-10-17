@@ -70,6 +70,12 @@ type Options struct {
 	EnableLegacySSE  bool
 	AllowedOrigins   []string
 
+	// RequireToken / LoopbackAnonymous 控制 bearer token 认证。
+	// TokenPath 指向 token 文件；为空时禁用认证（仅供测试）。
+	RequireToken      bool
+	LoopbackAnonymous bool
+	TokenPath         string
+
 	MaxRequestBytes    int64
 	MaxUploadBytes     int64
 	TransferChunkBytes int64

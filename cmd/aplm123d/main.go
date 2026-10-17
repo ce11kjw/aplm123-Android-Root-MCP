@@ -250,6 +250,9 @@ func runServe(arguments []string) error {
 		TransferDir:        filepath.Join(cfg.Paths.StateDir, "run", "transfer"),
 		EnableLegacySSE:    cfg.Network.LegacySSE,
 		AllowedOrigins:     cfg.Network.AllowedOrigins,
+		RequireToken:       cfg.Security.RequireToken,
+		LoopbackAnonymous:  cfg.Security.LoopbackAnonymous,
+		TokenPath:          tokenPath(cfg),
 		MaxRequestBytes:    cfg.Limits.MaxRequestBytes,
 		MaxUploadBytes:     uploadMax,
 		TransferChunkBytes: cfg.Limits.TransferChunkBytes,
@@ -876,6 +879,15 @@ func envOr(name, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+// tokenPath 决定 bearer token 的存放位置。
+// 显式配置优先；否则落在状态目录下，与其它运行时文件同处。
+func tokenPath(cfg config.Config) string {
+	if p := strings.TrimSpace(cfg.Security.TokenFile); p != "" {
+		return p
+	}
+	return filepath.Join(cfg.Paths.StateDir, "token")
 }
 
 func maintainMCPAddressFile(

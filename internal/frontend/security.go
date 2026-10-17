@@ -16,6 +16,7 @@ var (
 	errInvalidHost   = errors.New("Host 不是本机地址")
 	errInvalidOrigin = errors.New("Origin 不受信任")
 	errOffLink       = errors.New("仅允许本机或同一链路的客户端")
+	errUnauthorized  = errors.New("缺少或错误的 bearer token")
 )
 
 type networkState struct {
@@ -27,13 +28,18 @@ type networkState struct {
 type accessPolicy struct {
 	allowLAN       bool
 	allowedOrigins map[string]struct{}
-	mu             sync.Mutex
-	cached         networkState
-	now            func() time.Time
-	interfaces     func() ([]net.Interface, error)
+	// requireToken 要求非环回来源携带 token。
+	requireToken bool
+	// loopbackAnonymous 允许环回来源跳过 token 校验。
+	loopbackAnonymous bool
+	tokens            *tokenStore
+	mu                sync.Mutex
+	cached            networkState
+	now               func() time.Time
+	interfaces        func() ([]net.Interface, error)
 }
 
-func newAccessPolicy(listenAddr string, origins []string) *accessPolicy {
+func newAccessPolicy(listenAddr string, origins []string, security SecurityPolicy) *accessPolicy {
 	allowLAN := true
 	if ip := net.ParseIP(strings.Trim(strings.TrimSpace(listenAddr), "[]")); ip != nil && ip.IsLoopback() {
 		allowLAN = false
@@ -46,11 +52,21 @@ func newAccessPolicy(listenAddr string, origins []string) *accessPolicy {
 		}
 	}
 	return &accessPolicy{
-		allowLAN:       allowLAN,
-		allowedOrigins: allowed,
-		now:            time.Now,
-		interfaces:     net.Interfaces,
+		allowLAN:          allowLAN,
+		allowedOrigins:    allowed,
+		requireToken:      security.RequireToken,
+		loopbackAnonymous: security.LoopbackAnonymous,
+		tokens:            security.Tokens,
+		now:               time.Now,
+		interfaces:        net.Interfaces,
 	}
+}
+
+// SecurityPolicy 把认证相关的运行时配置打包传给 accessPolicy。
+type SecurityPolicy struct {
+	RequireToken      bool
+	LoopbackAnonymous bool
+	Tokens            *tokenStore
 }
 
 func (p *accessPolicy) validate(r *http.Request) error {
@@ -62,7 +78,8 @@ func (p *accessPolicy) validate(r *http.Request) error {
 	if err != nil {
 		return fmt.Errorf("读取本机网络接口: %w", err)
 	}
-	if !remoteIP.IsLoopback() {
+	loopback := remoteIP.IsLoopback()
+	if !loopback {
 		if !p.allowLAN || !isDirectlyOnLink(remoteIP, state.networks) {
 			return errOffLink
 		}
@@ -73,7 +90,47 @@ func (p *accessPolicy) validate(r *http.Request) error {
 	if err := p.validateOrigin(r); err != nil {
 		return err
 	}
+	// 身份校验放在链路与来源校验之后：先确认「是不是本网段的可信来源」，
+	// 再判断「有没有凭证」。这样外人连 401 都拿不到，减少信息暴露。
+	if err := p.authorize(r, loopback); err != nil {
+		return err
+	}
 	return nil
+}
+
+// authorize 按配置决定是否需要 bearer token。
+func (p *accessPolicy) authorize(r *http.Request, loopback bool) error {
+	if loopback && p.loopbackAnonymous {
+		return nil
+	}
+	// 探活与版本查询始终免认证：否则外部监控、systemd/管理器健康检查
+	// 在认证开启后会全部失效，反而掩盖真实故障。
+	// 这两个端点不返回任何敏感信息（仅存活状态与版本号）。
+	if authExemptPaths[r.URL.Path] {
+		return nil
+	}
+	if !p.requireToken {
+		return nil
+	}
+	if p.tokens == nil {
+		// 配置要求认证但 token 存储未就绪：拒绝而不是放行，
+		// 否则「需要认证」会退化成裸奔。
+		return errTokenMissing
+	}
+	presented := bearerFromRequest(r)
+	if presented == "" {
+		return errUnauthorized
+	}
+	if !p.tokens.verify(presented) {
+		return errUnauthorized
+	}
+	return nil
+}
+
+// authExemptPaths 是免认证路径。刻意保持最小：只放不影响安全判断的探针。
+var authExemptPaths = map[string]bool{
+	"/health":  true,
+	"/version": true,
 }
 
 func (p *accessPolicy) validateOrigin(r *http.Request) error {
