@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"slices"
@@ -28,8 +27,13 @@ type Config struct {
 }
 
 type Network struct {
-	Port           int      `json:"port"`
-	ListenLoopback bool     `json:"listenLoopback"`
+	Port int `json:"port"`
+	// ListenLAN 控制是否监听直接连接的局域网地址。
+	//   false → 仅监听 127.0.0.1 / ::1（本机可达，最安全）
+	//   true  → 额外监听 0.0.0.0 / ::（同网段可达，受 security 认证约束）
+	//
+	// 曾有一个 listenLoopback 字段，但它从未真正控制监听（环回始终监听），
+	// 属于「配置欺骗」，已移除；环回不可关闭，否则会把自己锁在外面。
 	ListenLAN      bool     `json:"listenLan"`
 	LegacySSE      bool     `json:"legacySse"`
 	AllowedOrigins []string `json:"allowedOrigins"`
@@ -65,12 +69,23 @@ type Limits struct {
 }
 
 type Security struct {
+	// Anonymous 为兼容旧配置保留，但不再具有「拒绝认证」的含义：
+	// 认证是否启用由 RequireToken / LoopbackAnonymous 决定。
 	Anonymous       bool `json:"anonymous"`
 	OnLinkOnly      bool `json:"onLinkOnly"`
 	ValidateHost    bool `json:"validateHost"`
 	ValidateOrigin  bool `json:"validateOrigin"`
 	AllowCORS       bool `json:"allowCors"`
 	DropFrontendUID int  `json:"dropFrontendUid"`
+
+	// RequireToken 要求非环回来源携带 Bearer token。
+	// 默认 true：局域网访问必须认证；环回是否免认证由 LoopbackAnonymous 决定。
+	RequireToken bool `json:"requireToken"`
+	// LoopbackAnonymous 允许环回来源免认证。
+	// 默认 true，使本机调用（含 MCP 客户端）在升级后无需任何改动。
+	LoopbackAnonymous bool `json:"loopbackAnonymous"`
+	// TokenFile 是 bearer token 的存放路径；为空时使用 <stateDir>/token。
+	TokenFile string `json:"tokenFile"`
 }
 
 type LoadReport struct {
@@ -87,7 +102,6 @@ func Default() Config {
 		SchemaVersion: SchemaVersion,
 		Network: Network{
 			Port:           buildinfo.DefaultPort,
-			ListenLoopback: true,
 			ListenLAN:      true,
 			LegacySSE:      true,
 			AllowedOrigins: []string{},
@@ -117,12 +131,14 @@ func Default() Config {
 			DownloadRetryAttempts: 4,
 		},
 		Security: Security{
-			Anonymous:       true,
-			OnLinkOnly:      true,
-			ValidateHost:    true,
-			ValidateOrigin:  true,
-			AllowCORS:       false,
-			DropFrontendUID: 2000,
+			Anonymous:         true,
+			OnLinkOnly:        true,
+			ValidateHost:      true,
+			ValidateOrigin:    true,
+			AllowCORS:         false,
+			DropFrontendUID:   2000,
+			RequireToken:      true,
+			LoopbackAnonymous: true,
 		},
 		Capabilities: map[string]bool{},
 	}
@@ -135,9 +151,6 @@ func (c Config) Validate() error {
 	}
 	if c.Network.Port < 1 || c.Network.Port > 65535 {
 		problems = append(problems, "network.port 必须在 1..65535")
-	}
-	if !c.Network.ListenLoopback && !c.Network.ListenLAN {
-		problems = append(problems, "至少启用一个监听范围")
 	}
 	for _, origin := range c.Network.AllowedOrigins {
 		if origin == "*" {
@@ -180,11 +193,15 @@ func (c Config) Validate() error {
 	if c.Security.AllowCORS {
 		problems = append(problems, "本版本禁止开放 CORS")
 	}
-	if !c.Security.Anonymous {
-		problems = append(problems, "本版本固定为匿名连接，不接受会造成认证已启用假象的配置")
-	}
+	// 认证由 RequireToken / LoopbackAnonymous 决定。旧版用 anonymous 字段
+	// 表达「强制匿名」；现在保留该字段只为兼容已有配置文件，不再据此拒绝。
 	if !c.Security.OnLinkOnly || !c.Security.ValidateHost || !c.Security.ValidateOrigin {
 		problems = append(problems, "onLinkOnly、validateHost、validateOrigin 必须保持启用")
+	}
+	// 若关闭环回免认证又关闭 token 要求，则本机调用也会被拒且无从认证，
+	// 属于必然把自己锁死的组合，直接拒绝。
+	if !c.Security.RequireToken && !c.Security.LoopbackAnonymous {
+		problems = append(problems, "security.requireToken 与 loopbackAnonymous 不能同时为 false（会导致无法访问）")
 	}
 	if c.Security.DropFrontendUID != 2000 {
 		problems = append(problems, "security.dropFrontendUid 必须为 Android shell UID 2000")
@@ -299,16 +316,16 @@ func ensureDirectories(scope string, dirs []string) error {
 	return nil
 }
 
-func ListenAddresses(cfg Config) []string {
-	var result []string
-	port := fmt.Sprintf("%d", cfg.Network.Port)
-	if cfg.Network.ListenLoopback {
-		result = append(result, net.JoinHostPort("127.0.0.1", port), net.JoinHostPort("::1", port))
-	}
+// ListenHost 返回应当用于监听的地址。
+//
+// 环回始终监听（服务自身与本机 MCP 客户端依赖它）。ListenLAN 为真时
+// 额外监听全部地址，使同网段可直达——此时安全性由 accessPolicy 的
+// 链路校验与 bearer token 认证共同保证。
+func ListenHost(cfg Config) string {
 	if cfg.Network.ListenLAN {
-		result = append(result, net.JoinHostPort("0.0.0.0", port), net.JoinHostPort("::", port))
+		return "0.0.0.0"
 	}
-	return result
+	return "127.0.0.1"
 }
 
 func derivePaths(cfg *Config) {

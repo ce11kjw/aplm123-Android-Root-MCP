@@ -2945,11 +2945,7 @@
                     "type": "boolean"
                   },
                   "listenLan": {
-                    "description": "监听直接连接的局域网地址。",
-                    "type": "boolean"
-                  },
-                  "listenLoopback": {
-                    "description": "监听回环地址。",
+                    "description": "监听直接连接的局域网地址。关闭后仅本机可达。",
                     "type": "boolean"
                   },
                   "port": {
@@ -2961,7 +2957,6 @@
                 },
                 "required": [
                   "port",
-                  "listenLoopback",
                   "listenLan",
                   "legacySse",
                   "allowedOrigins"
@@ -3023,14 +3018,27 @@
                   },
                   "anonymous": {
                     "const": true,
-                    "description": "本版本固定匿名连接。"
+                    "description": "兼容字段；认证是否启用由 requireToken / loopbackAnonymous 决定。"
                   },
                   "dropFrontendUid": {
                     "const": 2000
                   },
+                  "loopbackAnonymous": {
+                    "description": "允许环回来源免认证。",
+                    "type": "boolean"
+                  },
                   "onLinkOnly": {
                     "const": true,
                     "description": "仅允许回环和直接连接的局域网来源。"
+                  },
+                  "requireToken": {
+                    "description": "要求非环回来源携带 Bearer token。",
+                    "type": "boolean"
+                  },
+                  "tokenFile": {
+                    "description": "Bearer token 存放路径；留空使用 stateDir/token。",
+                    "minLength": 1,
+                    "type": "string"
                   },
                   "validateHost": {
                     "const": true
@@ -3045,7 +3053,9 @@
                   "validateHost",
                   "validateOrigin",
                   "allowCors",
-                  "dropFrontendUid"
+                  "dropFrontendUid",
+                  "requireToken",
+                  "loopbackAnonymous"
                 ],
                 "type": "object"
               }

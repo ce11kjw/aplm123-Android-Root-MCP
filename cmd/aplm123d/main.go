@@ -230,10 +230,8 @@ func runServe(arguments []string) error {
 			Compatibility:       taskExtension,
 		},
 	)
-	listenAddress := "127.0.0.1"
-	if cfg.Network.ListenLAN {
-		listenAddress = "0.0.0.0"
-	}
+	// 监听地址由配置统一决定：ListenLAN 为真才对外，否则仅环回。
+	listenAddress := config.ListenHost(cfg)
 	uploadMax := cfg.Limits.TransferMaxBytes
 	if uploadMax <= 0 {
 		uploadMax = math.MaxInt64
