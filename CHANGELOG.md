@@ -1,5 +1,41 @@
 # 更新日志
 
+## 1.0
+
+_（2026-10-17）_
+
+### 安全
+
+- **新增 Bearer Token 认证**。此前服务对任何能连到 5322 端口的程序都开放
+  Root 级能力，仅靠 `onLinkOnly` 限制来源；同网段设备一旦可达即等同拿到
+  完整 Root。现在非环回来源必须携带 `Authorization: Bearer <token>`。
+
+  为了不破坏既有用法，默认行为刻意保持宽松：
+  - 环回（`127.0.0.1`/`::1`）免认证（`loopbackAnonymous=true`）
+  - 局域网需要 token（`requireToken=true`）
+  - `/health`、`/version` 始终免认证
+
+  token 32 字节随机、文件权限 `0600`、常量时间比较；配置要求认证但存储
+  缺失时**拒绝而非放行**，避免退化成裸奔。
+
+- **移除 `network.listenLoopback`**。该字段从未真正控制监听（环回始终监听），
+  设成 `false` 既不关闭环回也不带来保护，属于配置欺骗。现在只有
+  `network.listenLan` 一个开关，语义明确。
+
+- WebUI 面板新增「安全」区块：局域网开关、Token 开关、本机免认证开关，
+  以及 Token 轮换。监听范围变更会明确标注「重启后生效」，不做即时生效的假象。
+
+### 修复
+
+- `listenLoopback` 配置项无效的问题（见上）。
+- README 工具数由 49 更正为 53。
+
+### 文档
+
+- 新增 [`docs/MIGRATION-1.0.md`](docs/MIGRATION-1.0.md)：升级检查、两处
+  行为变更、验证与回滚步骤。
+- [`docs/SECURITY.md`](docs/SECURITY.md) 重写为「三层防护」模型。
+
 ## 0.09
 
 _（2026-10-16）_

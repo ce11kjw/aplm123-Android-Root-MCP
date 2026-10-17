@@ -1,6 +1,6 @@
 # aplm123 Root MCP
 
-aplm123 是面向 Android 8.0–16（API 26–36）的 Root MCP 服务。它把文件、Shell、应用、Root 模块、系统设置、设备控制、网络、诊断、定时、备份和渐进技能统一暴露为 49 个 MCP 工具，并同时支持：
+aplm123 是面向 Android 8.0–16（API 26–36）的 Root MCP 服务。它把文件、Shell、应用、Root 模块、系统设置、设备控制、网络、诊断、定时、备份和渐进技能统一暴露为 53 个 MCP 工具，并同时支持：
 
 - MCP `2026-07-28` 无会话 Streamable HTTP 与 `server/discover`
 - 旧版 Streamable HTTP `initialize` / `notifications/initialized` / `ping`
