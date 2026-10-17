@@ -1,0 +1,21 @@
+#!/bin/sh
+# 提交前敏感信息扫描。
+#
+# 这是「绝不把凭据或真实聊天记录样本推到远端」这条约束的本地执行点；
+# CI 里跑同一份 scripts/secret_scan.py，避免两边规则不一致。
+#
+# 仅在 git 仓库内且脚本存在时生效；缺失时放行而不是阻断提交，
+# 以免在新克隆或精简环境里把开发流程卡死。
+
+if [ -f scripts/secret_scan.py ]; then
+    if command -v python3 >/dev/null 2>&1; then
+        python3 scripts/secret_scan.py --staged || {
+            echo "" >&2
+            echo "提交已被阻止：暂存区含疑似凭据或禁止入库的样本文件。" >&2
+            echo "如确需跳过（不建议），使用 git commit --no-verify。" >&2
+            exit 1
+        }
+    fi
+fi
+
+exit 0

@@ -10,3 +10,17 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# --- 本地分析/样本数据，绝不入库 ---
+# AI 聊天记录样本（含真实对话，可能含明文凭据）
+/ai-chat-probe/
+/save-v009-worktree/
+/ssh-v009-backup/
+/module-backup/
+# RikkaHub / 其他 AI App 的 Proto DataStore（含明文 API Key）
+*.preferences_pb
+settings.preferences_pb
+# 聊天数据库样本
+rikka_hub*
+*.db-wal
+*.db-shm
