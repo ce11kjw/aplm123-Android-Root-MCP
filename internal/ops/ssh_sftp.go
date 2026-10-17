@@ -530,7 +530,7 @@ func (m *Manager) serveSSHForward(session *sshSession, forward *sshForward) {
 			done := make(chan struct{}, 2)
 			go func() {
 				written, copyErr := io.Copy(remoteConn, io.LimitReader(conn, sshMaxForwardBytes))
-				forward.bytesIn += written
+				forward.bytesIn.Add(written)
 				if copyErr != nil {
 					forward.lastError = sanitizeSSHError(copyErr)
 				}
@@ -538,7 +538,7 @@ func (m *Manager) serveSSHForward(session *sshSession, forward *sshForward) {
 			}()
 			go func() {
 				written, copyErr := io.Copy(conn, io.LimitReader(remoteConn, sshMaxForwardBytes))
-				forward.bytesOut += written
+				forward.bytesOut.Add(written)
 				if copyErr != nil {
 					forward.lastError = sanitizeSSHError(copyErr)
 				}

@@ -65,6 +65,7 @@ type Manager struct {
 	networkOnce          sync.Once
 	network              *networkRuntime
 	sshMu                sync.Mutex
+	sshOnce              sync.Once
 	ssh                  *sshRuntime
 	closeOnce            sync.Once
 	// closed 在 Close 时关闭，用于停止后台清扫协程。

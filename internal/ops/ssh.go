@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -80,12 +81,14 @@ type sshSession struct {
 
 // sshForward 是一条本地端口转发（-L 语义）。
 type sshForward struct {
-	bindAddr  string
-	bindPort  int
-	target    string
-	listener  net.Listener
-	bytesIn   int64
-	bytesOut  int64
+	bindAddr string
+	bindPort int
+	target   string
+	listener net.Listener
+	// 字节计数由转发双向的两个 goroutine 并发累加，读取来自 list/close，
+	// 因此必须用原子量而不是普通 int64（go test -race 可复现竞争）。
+	bytesIn   atomic.Int64
+	bytesOut  atomic.Int64
 	stopOnce  sync.Once
 	done      chan struct{}
 	lastError string
@@ -105,15 +108,18 @@ func (m *Manager) sshState() *sshRuntime {
 		}
 	})
 	// 独立于 networkRuntime，避免 SSH 会话被 WS 的 TTL 逻辑影响。
-	if m.ssh == nil {
+	//
+	// 用 sync.Once 而不是「无锁读 + 持锁写」的双重检查：后者在并发首次调用时，
+	// 无锁读 m.ssh 与持锁写 m.ssh 之间构成数据竞争（go test -race 可复现）。
+	m.sshOnce.Do(func() {
 		m.sshMu.Lock()
+		defer m.sshMu.Unlock()
 		if m.ssh == nil {
 			m.ssh = &sshRuntime{}
 			// 后台周期回收空闲会话：调用方忘记 close 时也能自愈。
 			m.ssh.startSweeper(m.closed)
 		}
-		m.sshMu.Unlock()
-	}
+	})
 	return m.ssh
 }
 
@@ -354,7 +360,7 @@ func (f *sshForward) stop() {
 }
 
 func (f *sshForward) counters() (int64, int64) {
-	return f.bytesIn, f.bytesOut
+	return f.bytesIn.Load(), f.bytesOut.Load()
 }
 
 func (s *sshSession) summary() map[string]any {
