@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aplm123/android-ai-mcp/internal/webui"
@@ -47,6 +48,27 @@ type Server struct {
 	// 流连接再多也不会阻塞普通工具调用。
 	streamSlots chan struct{}
 	streams     *streamRegistry
+
+	// applySecurity 由 service 层注入：把面板上的三个开关写回配置文件。
+	// 为 nil 表示当前运行模式不支持在线修改（例如测试构造的 Server）。
+	applySecurity func(SecurityChange) error
+	// mu 保护 access 里的认证开关，使其能在运行期被面板修改。
+	mu sync.Mutex
+}
+
+// SecurityChange 是面板可修改的三个安全开关；nil 表示不改该项。
+type SecurityChange struct {
+	ListenLAN         *bool
+	RequireToken      *bool
+	LoopbackAnonymous *bool
+}
+
+// SetSecurityApplier 注入配置写回实现。由 cmd 层在构造后调用，
+// 使面板开关能把改动持久化；未注入时面板会返回 SECURITY_UPDATE_UNAVAILABLE。
+func (s *Server) SetSecurityApplier(fn func(SecurityChange) error) {
+	s.mu.Lock()
+	s.applySecurity = fn
+	s.mu.Unlock()
 }
 
 // New validates all mandatory integration points and constructs a frontend.
@@ -169,6 +191,10 @@ func (s *Server) routes() {
 	// /api/streams 同时支持 GET（列表）与 POST/DELETE（断开），
 	// 这里按方法分派，避免落到兜底静态处理器变成 405。
 	s.mux.HandleFunc("/api/streams", exactPath("/api/streams", s.uiStreamsDispatch))
+	// 安全开关：面板上的应急控制。改动写入配置，认证项即时生效、
+	// 监听范围需重启（监听器已绑定，不能热切换）。
+	s.mux.HandleFunc("/api/security", exactPath("/api/security", s.securityDispatch))
+	s.mux.HandleFunc("/api/token/rotate", exactPath("/api/token/rotate", s.handleTokenRotate))
 	s.mux.HandleFunc("/transfer/uploads/", s.transfers.handleUpload)
 	s.mux.HandleFunc("/transfer/files/", s.transfers.handleDownload)
 	s.mux.Handle("/", webui.New())

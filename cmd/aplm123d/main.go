@@ -265,6 +265,24 @@ func runServe(arguments []string) error {
 	if err != nil {
 		return err
 	}
+	// 面板的三个安全开关写回配置文件。监听范围变更需重启，
+	// 认证开关由 frontend 自行即时应用。
+	public.SetSecurityApplier(func(change frontend.SecurityChange) error {
+		updated := cfg
+		if change.ListenLAN != nil {
+			updated.Network.ListenLAN = *change.ListenLAN
+		}
+		if change.RequireToken != nil {
+			updated.Security.RequireToken = *change.RequireToken
+		}
+		if change.LoopbackAnonymous != nil {
+			updated.Security.LoopbackAnonymous = *change.LoopbackAnonymous
+		}
+		if err := updated.Validate(); err != nil {
+			return err
+		}
+		return config.Save(*configPath, updated)
+	})
 	api.SetPublisher(func(path, name, sha256 string, ttl time.Duration) (model.Artifact, error) {
 		artifact, err := public.PublishFile(path, name, sha256, ttl)
 		if err != nil {
