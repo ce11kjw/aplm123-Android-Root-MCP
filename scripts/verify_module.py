@@ -33,10 +33,17 @@ LEGAL_REQUIRED = (
     "NOTICE",
 )
 LICENSE_SHA256 = "fb981668c18a279e285fc4d83fba1e836cc84dd4daa73c9697d3cfd2d8aca6e0"
+# 本地改造相对上游新增的条目：
+#   README.md          模块安装说明（面向用户）
+#   webroot/index.html KernelSU/APatch 管理器 WebUI 入口
+EXTRA_ENTRIES = ("README.md", "webroot/index.html")
+# 官方校验脚本一律拒绝 ZIP 里出现 .md/.txt 散落文件，但上面这些是我们有意添加的。
+ALLOWED_TEXT_ENTRIES = {"README.md"}
 EXPECTED_ENTRIES = set(
     REQUIRED
     + LEGAL_REQUIRED
     + ("common.sh", "post-fs-data.sh", "systemless.sh", "update.sh")
+    + EXTRA_ENTRIES
     + tuple(f"bin/{abi}/{binary}" for abi in ABIS for binary in ("aplm123d", "7zz"))
 )
 NOTICE_SECTIONS = {
@@ -132,7 +139,10 @@ def main() -> None:
             if not archive.read(name):
                 raise SystemExit(f"ZIP 中 {name} 为空")
         text_entries = [
-            name for name in names if pathlib.PurePosixPath(name).suffix.lower() in {".txt", ".md"}
+            name
+            for name in names
+            if pathlib.PurePosixPath(name).suffix.lower() in {".txt", ".md"}
+            and name not in ALLOWED_TEXT_ENTRIES
         ]
         if text_entries:
             raise SystemExit(f"ZIP 仍含分散文本文件: {sorted(text_entries)}")
