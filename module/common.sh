@@ -23,21 +23,10 @@ zcr_print() {
   printf '%s\n' "$*"
 }
 
-# 启动链路的落盘日志。
-#
-# 存在的原因：service.sh / post-fs-data.sh 由 root 管理器在开机时调用，
-# 它们的 stdout/stderr 通常被丢弃。一旦启动在早期失败（目录不可建、二进制
-# 不可执行、锁被占等），用户既看不到输出、也找不到 supervisor.log——
-# 因为那个文件只在守护进程成功起来之后才会有内容。
-#
-# 因此所有启动路径的成败都写到 boot.log，与 supervisor.log 同目录。
 zcr_boot_log() {
-  # 注意：ZCR_LOG_DIR 由 common.sh 顶部定义，此处必须复用同一个值，
-  # 不能改写它——否则调用方的路径约定会被破坏（早期版本踩过这个坑）。
   zcr_log_dir="$ZCR_LOG_DIR"
   zcr_log_file="$zcr_log_dir/boot.log"
   mkdir -p "$zcr_log_dir" 2>/dev/null || return 0
-  # 超过 256 KiB 时轮转一次，避免无界增长
   if [ -f "$zcr_log_file" ]; then
     zcr_size="$(wc -c < "$zcr_log_file" 2>/dev/null)"
     case "$zcr_size" in
@@ -343,8 +332,6 @@ zcr_start_supervisor() {
     return 1
   }
 
-  # 短暂等待后核验进程是否真的活下来了。
-  # 守护进程启动即退（例如早期的哈希校验失败）时，这里能捕获到并记录退出原因。
   zcr_wait=0
   while [ "$zcr_wait" -lt 3 ]; do
     if ! zcr_pid_is_supervisor "$zcr_new_pid"; then

@@ -6,7 +6,6 @@ ZCR_MODDIR="$MODDIR"
 
 umask 077
 zcr_prepare_internal || {
-  # 早期失败必须留痕：此前这里静默退出，导致启动问题完全无法排查。
   mkdir -p /data/local/tmp 2>/dev/null
   printf '%s [error] post-fs-data: 无法创建内部目录 %s\n' \
     "$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || printf unknown)" \
