@@ -50,6 +50,8 @@
   button:hover{border-color:var(--accent)}
   button.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
   .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  select{background:transparent;color:inherit;border:1px solid var(--line);border-radius:7px;
+    padding:6px 9px;font-size:12.5px;font-family:inherit;cursor:pointer}
   #toast{margin-left:auto;font-size:12px;color:var(--muted)}
   footer{margin-top:26px;color:var(--muted);font-size:11.5px;display:flex;gap:12px;flex-wrap:wrap}
   code{background:var(--line);padding:1px 5px;border-radius:4px;font-size:11.5px}
@@ -75,6 +77,20 @@
     <div class="card"><p class="label">Root</p><p class="value" id="root">—</p></div>
     <div class="card"><p class="label">Root 框架</p><p class="value" id="framework">—</p></div>
     <div class="card"><p class="label">任务数</p><p class="value" id="tasks">—</p></div>
+  </div>
+
+  <h2>工具输出 <span class="hint">改完立即生效，无需重启</span></h2>
+  <div class="card">
+    <div class="row">
+      <label class="mono" for="setResultText">结果文本形态</label>
+      <select id="setResultText">
+        <option value="auto">auto · 跟随协议（默认）</option>
+        <option value="on">on · 只给「OK: 消息」</option>
+        <option value="off">off · 始终完整 JSON</option>
+      </select>
+      <span id="outToast"></span>
+    </div>
+    <p class="empty" id="outEffective">—</p>
   </div>
 
   <h2>连接池 <span class="hint">过载时短请求与长连接分开计数</span></h2>
@@ -211,6 +227,51 @@
       })
       .catch(function(e){toast.textContent="失败："+e.message});
   });
+
+  // --- 工具输出形态 ---
+  // 改的是结果拼装方式，写回后立即对下一次调用生效。
+  var outBusy=false;
+
+  function renderOutput(o){
+    if(!o) return;
+    var sel=byId("setResultText");
+    if(sel && document.activeElement!==sel) sel.value=o.compactResultText||"auto";
+    var eff=byId("outEffective");
+    if(eff) eff.textContent=o.effective||"";
+  }
+
+  function loadOutput(){
+    fetch("/api/output",{cache:"no-store"})
+      .then(function(r){return r.json()})
+      .then(function(d){ renderOutput(d.output); })
+      .catch(function(e){ var t=byId("outToast"); if(t) t.textContent="读取失败："+e.message; });
+  }
+
+  function outError(d){
+    if(!d) return "保存失败";
+    if(d.error && d.error.message) return d.error.message;
+    return d.description||d.code||"保存失败";
+  }
+
+  byId("setResultText").addEventListener("change",function(){
+    if(outBusy) return;
+    outBusy=true;
+    var toast=byId("outToast"); if(toast) toast.textContent="保存中…";
+    fetch("/api/output",{method:"POST",cache:"no-store",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({compactResultText:this.value})})
+      .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d}})})
+      .then(function(res){
+        if(!res.ok){ throw new Error(outError(res.d)); }
+        renderOutput(res.d.output);
+        if(toast) toast.textContent=res.d.message||"已保存";
+        setTimeout(loadOutput,600);
+      })
+      .catch(function(e){ if(toast) toast.textContent="失败："+e.message; loadOutput(); })
+      .then(function(){ outBusy=false; });
+  });
+
+  loadOutput();
 
   // 页面可见时才刷新，避免后台标签页持续占用连接。
   function start(){stop(); timer=setInterval(function(){ if(!document.hidden) refresh(); },5000); }

@@ -758,6 +758,11 @@ func configInputSchema() map[string]any {
 					"shutdownGraceSeconds":  integer(1, 300, "优雅退出秒数。"),
 					"uploadIdleTtlSeconds":  integer(60, 2592000, "上传会话空闲有效秒数。"),
 					"downloadRetryAttempts": integer(0, 10, "下载重试次数。"),
+					"compactResultText": map[string]any{
+						"type":        "string",
+						"enum":        []string{"auto", "on", "off"},
+						"description": "工具结果文本形态：auto 跟随协议（默认）、on 始终只回「OK: 消息」、off 始终完整 JSON。",
+					},
 				},
 				"required": []string{
 					"maxConnections", "maxRequestBytes", "totalTasks", "heavyTasks",

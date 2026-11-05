@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aplm123/android-ai-mcp/internal/webui"
@@ -46,6 +47,13 @@ type Server struct {
 	// 流连接再多也不会阻塞普通工具调用。
 	streamSlots chan struct{}
 	streams     *streamRegistry
+
+	// applyOutput 由 service 层注入：把面板上的输出形态写回配置文件。
+	applyOutput func(OutputChange) error
+	// resultTextMode 是运行期的结果文本形态；为空表示沿用 options 的初始值。
+	resultTextMode string
+	// mu 保护运行期可变的设置。
+	mu sync.Mutex
 }
 
 // New validates all mandatory integration points and constructs a frontend.
@@ -149,6 +157,9 @@ func (s *Server) routes() {
 	// /api/streams 同时支持 GET（列表）与 POST/DELETE（断开），
 	// 这里按方法分派，避免落到兜底静态处理器变成 405。
 	s.mux.HandleFunc("/api/streams", exactPath("/api/streams", s.uiStreamsDispatch))
+	// 输出形态开关：决定工具返回「OK: 消息」短文本还是完整 JSON。
+	// 改完立即生效，无需重启。
+	s.mux.HandleFunc("/api/output", exactPath("/api/output", s.outputDispatch))
 	s.mux.HandleFunc("/transfer/uploads/", s.transfers.handleUpload)
 	s.mux.HandleFunc("/transfer/files/", s.transfers.handleDownload)
 	s.mux.Handle("/", webui.New())

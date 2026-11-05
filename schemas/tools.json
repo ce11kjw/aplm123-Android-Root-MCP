@@ -2848,6 +2848,15 @@
                     "minimum": 1,
                     "type": "integer"
                   },
+                  "compactResultText": {
+                    "description": "工具结果文本形态：auto 跟随协议（默认）、on 始终只回「OK: 消息」、off 始终完整 JSON。",
+                    "enum": [
+                      "auto",
+                      "on",
+                      "off"
+                    ],
+                    "type": "string"
+                  },
                   "downloadRetryAttempts": {
                     "description": "下载重试次数。",
                     "maximum": 10,

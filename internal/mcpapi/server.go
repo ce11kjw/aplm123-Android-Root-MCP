@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"mime"
 	"path/filepath"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -21,6 +23,51 @@ type Caller interface {
 }
 
 type Publisher func(path, name, sha256 string, ttl time.Duration) (model.Artifact, error)
+
+// resultTextMode 保存运行期的结果文本形态：
+//
+//	"auto"（默认）跟随协议：只有协商到最新协议的客户端才收到短文本
+//	"on"          所有客户端都只收到「OK: 消息」
+//	"off"         所有客户端都收到完整 JSON 文本
+//
+// structuredContent 始终是完整对象，形态只影响 content 里的文本。
+var resultTextMode atomic.Value
+
+func init() {
+	resultTextMode.Store("auto")
+}
+
+// SetResultTextMode 更新结果文本形态；空值或未知值回落到 "auto"。
+func SetResultTextMode(mode string) {
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case "on":
+		resultTextMode.Store("on")
+	case "off":
+		resultTextMode.Store("off")
+	default:
+		resultTextMode.Store("auto")
+	}
+}
+
+// ResultTextMode 返回当前形态，供自检与测试读取。
+func ResultTextMode() string {
+	if value, ok := resultTextMode.Load().(string); ok {
+		return value
+	}
+	return "auto"
+}
+
+// compactText 判断本次调用是否使用「OK: 消息」短文本。
+func compactText(request *mcp.CallToolRequest) bool {
+	switch ResultTextMode() {
+	case "on":
+		return true
+	case "off":
+		return false
+	default:
+		return currentProtocol(request)
+	}
+}
 
 type API struct {
 	server    *mcp.Server
@@ -96,12 +143,12 @@ func (a *API) register(definition schema.Tool) {
 			decoderErr := json.Unmarshal(request.Params.Arguments, &args)
 			if decoderErr != nil {
 				result := model.Failure("INVALID_ARGUMENT", "工具参数必须是 JSON 对象", "DecodeError", decoderErr.Error())
-				return toolResult(result, currentProtocol(request)), nil
+				return toolResult(result, compactText(request)), nil
 			}
 		}
 		result := a.caller.Call(ctx, name, args)
 		a.publishArtifacts(&result)
-		return toolResult(result, currentProtocol(request)), nil
+		return toolResult(result, compactText(request)), nil
 	})
 }
 
