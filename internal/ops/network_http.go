@@ -194,7 +194,7 @@ func (m *Manager) httpRequest(ctx context.Context, args map[string]any) Result {
 		return fail(code, "HTTP 请求失败", err, "net_http_cookie_jar")
 	}
 	headerBudget := int(m.cfg.ResultPreviewBytes / 4)
-	headers, headersTruncated := boundedHTTPHeaders(fetched.Headers, headerBudget)
+	headers, headersTruncated := boundedHTTPHeaders(fetched.Headers, headerBudget, responseHeaderMode(args))
 	headerRaw, _ := json.Marshal(headers)
 	bodyBudget := int(m.cfg.ResultPreviewBytes) - len(headerRaw) - 2048
 	if bodyBudget < 0 {
@@ -225,8 +225,45 @@ func httpStatusError(status int) error {
 	return fmt.Errorf("HTTP status %d", status)
 }
 
+// responseHeaderMode 读取响应头回显策略：safe（默认，白名单）/ full（保留全部，仅打码 Cookie）。
+func responseHeaderMode(args map[string]any) string {
+	mode, err := argOptionalString(args, "", "headersMode")
+	if err != nil {
+		return "safe"
+	}
+	if strings.EqualFold(strings.TrimSpace(mode), "full") {
+		return "full"
+	}
+	return "safe"
+}
+
+// sanitizedHTTPHeaders 是 safe 模式的快捷入口。
 func sanitizedHTTPHeaders(headers http.Header) http.Header {
+	return sanitizedHTTPHeadersMode(headers, "safe")
+}
+
+// sanitizedHTTPHeadersMode 按模式处理响应头。
+//
+// safe（默认）：只回显传输/表示元数据白名单，其余一律打码——凭据型响应头
+// 没有标准名，用黑名单必然漏（X-Password、X-Private-Key 之类）。
+//
+// full：保留全部头部原值，**只**对 Set-Cookie 的值打码。用于调试需要读
+// Location / ETag / WWW-Authenticate / Mcp-Session-Id 这类语义头，
+// 而这些头恰恰是白名单最容易误伤的。调用方须知道 full 可能把上游返回的
+// 自定头（含敏感值）带进上下文，所以是显式 opt-in。
+func sanitizedHTTPHeadersMode(headers http.Header, mode string) http.Header {
 	copy := headers.Clone()
+	if mode == "full" {
+		for name := range copy {
+			switch strings.ToLower(name) {
+			case "set-cookie", "set-cookie2":
+				count := len(copy.Values(name))
+				copy.Del(name)
+				copy.Set(name, fmt.Sprintf("[redacted cookie value(s): %d]", count))
+			}
+		}
+		return copy
+	}
 	for name := range copy {
 		lower := strings.ToLower(name)
 		redactURL := lower == "location" || lower == "content-location" || lower == "link" || lower == "refresh"
@@ -257,11 +294,11 @@ func safeResponseHeader(name string) bool {
 	}
 }
 
-func boundedHTTPHeaders(headers http.Header, limit int) (http.Header, bool) {
+func boundedHTTPHeaders(headers http.Header, limit int, mode string) (http.Header, bool) {
 	if limit < 512 {
 		limit = 512
 	}
-	safe := sanitizedHTTPHeaders(headers)
+	safe := sanitizedHTTPHeadersMode(headers, mode)
 	keys := make([]string, 0, len(safe))
 	for key := range safe {
 		keys = append(keys, key)

@@ -240,5 +240,10 @@ func (m *Manager) Execute(ctx context.Context, req Request) (result Result) {
 	if background, _ := argBool(req.Args, "background", false); background && !isTaskControl(req.Tool) {
 		return m.startBackground(req)
 	}
+	// 自动后台化：先等一个窗口，超窗再转后台。客户端（尤其移动端 MCP）
+	// 通常几十秒就掐断请求，硬等只会白跑；这里让调用方自己声明能等多久。
+	if seconds, ok := autoBackgroundSeconds(req.Args); ok && !isTaskControl(req.Tool) {
+		return m.startBackgroundWait(req, seconds)
+	}
 	return m.executeSync(ctx, req)
 }

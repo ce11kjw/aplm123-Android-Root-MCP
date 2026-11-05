@@ -6778,6 +6778,14 @@
             "description": "HTTP 请求头。",
             "type": "object"
           },
+          "headersMode": {
+            "description": "响应头回显策略：safe 只放行白名单（默认）；full 保留全部头部，仅对 Set-Cookie 的值打码。",
+            "enum": [
+              "safe",
+              "full"
+            ],
+            "type": "string"
+          },
           "host": {
             "description": "主机名或 IP 地址。",
             "type": "string"
@@ -8613,6 +8621,11 @@
             ],
             "type": "string"
           },
+          "autoBackgroundSeconds": {
+            "description": "等待窗口（秒）：超过该时间仍未完成就转后台继续执行并返回 taskId，避免客户端请求超时。",
+            "minimum": 1,
+            "type": "integer"
+          },
           "background": {
             "description": "是否转为持久后台任务执行。",
             "type": "boolean"
@@ -9493,6 +9506,11 @@
               "exec"
             ],
             "type": "string"
+          },
+          "autoBackgroundSeconds": {
+            "description": "等待窗口（秒）：超过该时间仍未完成就转后台继续执行并返回 taskId，避免客户端请求超时。",
+            "minimum": 1,
+            "type": "integer"
           },
           "background": {
             "description": "是否转为持久后台任务执行。",

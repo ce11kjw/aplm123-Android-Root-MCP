@@ -90,6 +90,7 @@ func (m *Manager) startBackground(req Request) Result {
 
 	req.Args = copyArgs(req.Args)
 	delete(req.Args, "background")
+	delete(req.Args, "autoBackgroundSeconds")
 	go func() {
 		m.tasksMu.Lock()
 		state.Status = "running"
@@ -129,6 +130,67 @@ func (m *Manager) startBackground(req Request) Result {
 		TaskID:   id,
 		Strategy: "detached_task",
 	}
+}
+
+// autoBackgroundSeconds 读取自动后台化的等待窗口（秒）。0 或非法值视为关闭。
+func autoBackgroundSeconds(args map[string]any) (int, bool) {
+	if args == nil {
+		return 0, false
+	}
+	raw, exists := args["autoBackgroundSeconds"]
+	if !exists {
+		return 0, false
+	}
+	switch value := raw.(type) {
+	case float64:
+		if value >= 1 {
+			return int(value), true
+		}
+	case int:
+		if value >= 1 {
+			return value, true
+		}
+	case int64:
+		if value >= 1 {
+			return int(value), true
+		}
+	}
+	return 0, false
+}
+
+// startBackgroundWait 先同步等待最多 seconds 秒：窗口内完成就直接把结果返回，
+// 省掉一次轮询；仍未完成则转后台，返回 taskId 让调用方稍后取。
+func (m *Manager) startBackgroundWait(req Request, seconds int) Result {
+	accepted := m.startBackground(req)
+	if !accepted.Success || accepted.TaskID == "" {
+		return accepted
+	}
+	deadline := time.Now().Add(time.Duration(seconds) * time.Second)
+	for time.Now().Before(deadline) {
+		time.Sleep(100 * time.Millisecond)
+		m.tasksMu.RLock()
+		state, exists := m.tasks[accepted.TaskID]
+		var status string
+		var result Result
+		if exists {
+			status = state.Status
+			result = state.Result
+		}
+		m.tasksMu.RUnlock()
+		if !exists {
+			break
+		}
+		switch status {
+		case "completed", "failed", "timeout", "cancelled":
+			result.TaskID = accepted.TaskID
+			// 窗口内完成：调用方拿到的就是普通结果，不需要再轮询。
+			return result
+		}
+	}
+	accepted.Message = "超过等待窗口仍未完成，已转后台继续执行；用 aplm_task get 取结果"
+	accepted.Data = map[string]any{"status": "running", "waitedSeconds": seconds}
+	accepted.Strategy = "detached_after_wait"
+	return accepted
 }
 
 func copyArgs(in map[string]any) map[string]any {
