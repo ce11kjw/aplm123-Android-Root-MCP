@@ -26,9 +26,9 @@ func TestOutputGetShowsInitialMode(t *testing.T) {
 func TestOutputUpdateAppliesImmediately(t *testing.T) {
 	srv := newOutputServer("auto")
 	var applied OutputChange
-	srv.SetOutputApplier(func(change OutputChange) error {
+	srv.SetOutputApplier(func(change OutputChange) (string, error) {
 		applied = change
-		return nil
+		return "", nil
 	})
 	rec := httptest.NewRecorder()
 	srv.handleOutputUpdate(rec, httptest.NewRequest(http.MethodPost, "/api/output",
@@ -50,7 +50,7 @@ func TestOutputUpdateAppliesImmediately(t *testing.T) {
 func TestOutputUpdateRejectsUnknownValue(t *testing.T) {
 	srv := newOutputServer("auto")
 	called := false
-	srv.SetOutputApplier(func(OutputChange) error { called = true; return nil })
+	srv.SetOutputApplier(func(OutputChange) (string, error) { called = true; return "", nil })
 	rec := httptest.NewRecorder()
 	srv.handleOutputUpdate(rec, httptest.NewRequest(http.MethodPost, "/api/output",
 		strings.NewReader(`{"compactResultText":"loud"}`)))
@@ -74,7 +74,7 @@ func TestOutputUpdateWithoutApplier(t *testing.T) {
 
 func TestOutputUpdateRejectsUnknownField(t *testing.T) {
 	srv := newOutputServer("auto")
-	srv.SetOutputApplier(func(OutputChange) error { return nil })
+	srv.SetOutputApplier(func(OutputChange) (string, error) { return "", nil })
 	rec := httptest.NewRecorder()
 	srv.handleOutputUpdate(rec, httptest.NewRequest(http.MethodPost, "/api/output",
 		strings.NewReader(`{"foo":1}`)))

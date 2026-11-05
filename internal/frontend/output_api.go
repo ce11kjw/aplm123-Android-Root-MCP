@@ -35,7 +35,8 @@ type OutputChange struct {
 }
 
 // SetOutputApplier 注入配置写回实现。未注入时面板返回 OUTPUT_UPDATE_UNAVAILABLE。
-func (s *Server) SetOutputApplier(fn func(OutputChange) error) {
+// 返回的 warning 非空表示改动只在本次运行生效（例如主配置不可写）。
+func (s *Server) SetOutputApplier(fn func(OutputChange) (string, error)) {
 	s.mu.Lock()
 	s.applyOutput = fn
 	s.mu.Unlock()
@@ -118,16 +119,21 @@ func (s *Server) handleOutputUpdate(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusBadRequest, "INVALID_VALUE", "compactResultText 只能是 auto、on 或 off")
 		return
 	}
-	if err := applier(OutputChange{CompactResultText: &mode}); err != nil {
+	warning, err := applier(OutputChange{CompactResultText: &mode})
+	if err != nil {
 		writeAPIError(w, http.StatusBadRequest, "OUTPUT_UPDATE_FAILED", err.Error())
 		return
 	}
 	s.mu.Lock()
 	s.resultTextMode = mode
 	s.mu.Unlock()
+	message := "已保存并立即生效"
+	if warning != "" {
+		message = "已生效，但" + warning
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"ok":      true,
 		"output":  s.outputSnapshot(),
-		"message": "已保存并立即生效",
+		"message": message,
 	})
 }

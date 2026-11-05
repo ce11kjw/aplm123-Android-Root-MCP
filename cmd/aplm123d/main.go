@@ -268,21 +268,27 @@ func runServe(arguments []string) error {
 		return err
 	}
 	// 面板的输出形态开关：写回配置并立即改变结果拼装方式，无需重启。
-	public.SetOutputApplier(func(change frontend.OutputChange) error {
+	public.SetOutputApplier(func(change frontend.OutputChange) (string, error) {
 		if change.CompactResultText == nil {
-			return nil
+			return "", nil
 		}
 		updated := cfg
 		updated.Limits.CompactResultText = *change.CompactResultText
 		if err := updated.Validate(); err != nil {
-			return err
+			return "", err
 		}
-		if err := config.Save(*configPath, updated); err != nil {
-			return err
+		// 主配置在 stateDir 下；前端以非 root 运行时写不动它，
+		// 那时退化为只写本次运行副本，并如实告知「重启后失效」。
+		warning := ""
+		if err := config.Save(filepath.Join(*stateDir, "config.json"), updated); err != nil {
+			if runErr := config.Save(*configPath, updated); runErr != nil {
+				return "", fmt.Errorf("保存配置失败: %w", err)
+			}
+			warning = "主配置不可写（服务以非 root 运行），本次改动在重启后失效"
 		}
 		cfg = updated
 		mcpapi.SetResultTextMode(*change.CompactResultText)
-		return nil
+		return warning, nil
 	})
 	api.SetPublisher(func(path, name, sha256 string, ttl time.Duration) (model.Artifact, error) {
 		artifact, err := public.PublishFile(path, name, sha256, ttl)

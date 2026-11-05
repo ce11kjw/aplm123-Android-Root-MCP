@@ -49,7 +49,7 @@ type Server struct {
 	streams     *streamRegistry
 
 	// applyOutput 由 service 层注入：把面板上的输出形态写回配置文件。
-	applyOutput func(OutputChange) error
+	applyOutput func(OutputChange) (string, error)
 	// resultTextMode 是运行期的结果文本形态；为空表示沿用 options 的初始值。
 	resultTextMode string
 	// mu 保护运行期可变的设置。
