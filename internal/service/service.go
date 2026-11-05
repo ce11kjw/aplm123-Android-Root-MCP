@@ -124,6 +124,7 @@ func (s *Service) Call(ctx context.Context, tool string, args map[string]any) mo
 		result = s.skillCall(args)
 	default:
 		background, _ := args["background"].(bool)
+		waitSeconds, hasWaitWindow := autoBackgroundWaitSeconds(args)
 		if background {
 			cleanArgs := cloneMap(args)
 			delete(cleanArgs, "background")
@@ -146,6 +147,8 @@ func (s *Service) Call(ctx context.Context, tool string, args map[string]any) mo
 				result.TaskID = task.ID
 				result.Strategy = "durable_task"
 			}
+		} else if hasWaitWindow {
+			result = s.callWithWaitWindow(ctx, tool, args, waitSeconds)
 		} else {
 			result = convertOps(s.operations.Execute(ctx, ops.Request{Tool: tool, Args: args}))
 		}
@@ -724,6 +727,61 @@ func (s *Service) taskListPage(offset, limit int) map[string]any {
 // sensitiveBackgroundReason rejects inputs that cannot safely be written to a
 // durable resumable snapshot. Paths and public identifiers remain supported;
 // secret-bearing payloads must run synchronously or be referenced indirectly.
+// autoBackgroundWaitSeconds 读取「最多同步等多久」的窗口（秒）；缺省或非法值视为关闭。
+func autoBackgroundWaitSeconds(args map[string]any) (int, bool) {
+	raw, exists := args["autoBackgroundSeconds"]
+	if !exists {
+		return 0, false
+	}
+	switch value := raw.(type) {
+	case float64:
+		if value >= 1 {
+			return int(value), true
+		}
+	case int:
+		if value >= 1 {
+			return value, true
+		}
+	}
+	return 0, false
+}
+
+// callWithWaitWindow 先同步等一个窗口，超窗转**持久**后台任务。
+//
+// 为什么不用 ops 层的 in-memory 后台任务：`aplm_task` 读的是 tasks.Manager
+// 里的持久任务，ops 那套 detached_task 根本查不到，等于给了个死 taskId。
+// 所以这里统一走 durable 任务，保证 taskId 一定可查。
+func (s *Service) callWithWaitWindow(ctx context.Context, tool string, args map[string]any, seconds int) model.Result {
+	cleanArgs := cloneMap(args)
+	delete(cleanArgs, "autoBackgroundSeconds")
+	// 含敏感/不可持久化参数时无法转后台，退回同步执行（窗口被忽略）。
+	if reason := sensitiveBackgroundReason(cleanArgs); reason != "" {
+		return convertOps(s.operations.Execute(ctx, ops.Request{Tool: tool, Args: cleanArgs}))
+	}
+	task, err := s.tasks.Submit(tool, cleanArgs, isHeavy(tool), true)
+	if err != nil {
+		// 提交失败就同步执行，别让整个调用失败。
+		return convertOps(s.operations.Execute(ctx, ops.Request{Tool: tool, Args: cleanArgs}))
+	}
+	waitCtx, cancel := context.WithTimeout(ctx, time.Duration(seconds)*time.Second)
+	defer cancel()
+	settled, waitErr := s.tasks.Wait(waitCtx, task.ID)
+	if waitErr == nil {
+		if settled.Result != nil {
+			return *settled.Result
+		}
+		result := model.Success("OK", "任务已完成", map[string]any{"taskId": settled.ID})
+		result.TaskID = settled.ID
+		result.Strategy = "durable_task"
+		return result
+	}
+	result := model.Success("TASK_ACCEPTED", "超过等待窗口仍未完成，已转后台继续执行；用 aplm_task get 取结果",
+		map[string]any{"taskId": task.ID, "status": "running", "waitedSeconds": seconds})
+	result.TaskID = task.ID
+	result.Strategy = "durable_after_wait"
+	return result
+}
+
 func sensitiveBackgroundReason(value any) string {
 	arguments, ok := value.(map[string]any)
 	if !ok {
