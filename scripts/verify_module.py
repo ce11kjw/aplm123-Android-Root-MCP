@@ -213,6 +213,16 @@ def main() -> None:
         # module.prop 的 author 是自定义值，这里只校验其余字段固定。
         import re as _re
         normalized = _re.sub(r"^author=.*$", "author=__AUTHOR__", prop, flags=_re.M)
+        # 在线更新入口固定指向本仓库的 latest/download/update.json；
+        # 允许该行存在，但地址必须一致，避免误指向别的仓库或失效域名。
+        expected_update_json = (
+            "https://github.com/ce11kjw/aplm123-Android-Root-MCP"
+            "/releases/latest/download/update.json"
+        )
+        update_match = _re.search(r"^updateJson=(.+)$", prop, flags=_re.M)
+        if not update_match or update_match.group(1).strip() != expected_update_json:
+            raise SystemExit("module.prop 的 updateJson 缺失或指向了非本仓库地址")
+        normalized = _re.sub(r"^updateJson=.*$\n?", "", normalized, flags=_re.M)
         if normalized != expected_prop:
             raise SystemExit("module.prop 元数据与指定内容不一致")
         action = archive.read("action.sh").decode("utf-8")
