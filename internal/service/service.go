@@ -147,6 +147,9 @@ func (s *Service) Call(ctx context.Context, tool string, args map[string]any) mo
 				result.TaskID = task.ID
 				result.Strategy = "durable_task"
 			}
+		} else if hasWaitWindow && sensitiveBackgroundReason(stripWaitWindow(args)) != "" {
+			// 命令/脚本文本不允许落盘 → 交给 ops 做进程内后台任务。
+			result = convertOps(s.operations.Execute(ctx, ops.Request{Tool: tool, Args: args}))
 		} else if hasWaitWindow {
 			result = s.callWithWaitWindow(ctx, tool, args, waitSeconds)
 		} else {
@@ -453,6 +456,12 @@ func (s *Service) taskCall(ctx context.Context, args map[string]any) model.Resul
 	switch action {
 	case "get":
 		data, err = s.TaskGet(ctx, id)
+		if err != nil {
+			// 兜底：shell/script 的自动后台化任务只在进程内，不在持久队列里。
+			if view, ok := s.operations.TaskView(id); ok {
+				data, err = view, nil
+			}
+		}
 	case "list":
 		limit := 20
 		if requested, ok := number(args["limit"]); ok && requested >= 1 && requested <= 100 {
@@ -727,6 +736,13 @@ func (s *Service) taskListPage(offset, limit int) map[string]any {
 // sensitiveBackgroundReason rejects inputs that cannot safely be written to a
 // durable resumable snapshot. Paths and public identifiers remain supported;
 // secret-bearing payloads must run synchronously or be referenced indirectly.
+// stripWaitWindow 复制一份参数并去掉等待窗口字段，用于安全策略判定。
+func stripWaitWindow(args map[string]any) map[string]any {
+	clean := cloneMap(args)
+	delete(clean, "autoBackgroundSeconds")
+	return clean
+}
+
 // autoBackgroundWaitSeconds 读取「最多同步等多久」的窗口（秒）；缺省或非法值视为关闭。
 func autoBackgroundWaitSeconds(args map[string]any) (int, bool) {
 	raw, exists := args["autoBackgroundSeconds"]

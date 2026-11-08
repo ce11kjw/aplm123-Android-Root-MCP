@@ -90,6 +90,7 @@ func (m *Manager) startBackground(req Request) Result {
 
 	req.Args = copyArgs(req.Args)
 	delete(req.Args, "background")
+	delete(req.Args, "autoBackgroundSeconds")
 	go func() {
 		m.tasksMu.Lock()
 		state.Status = "running"
@@ -129,6 +130,77 @@ func (m *Manager) startBackground(req Request) Result {
 		TaskID:   id,
 		Strategy: "detached_task",
 	}
+}
+
+// autoBackgroundSeconds 读取自动后台化的等待窗口（秒）。0 或非法值视为关闭。
+func autoBackgroundSeconds(args map[string]any) (int, bool) {
+	if args == nil {
+		return 0, false
+	}
+	raw, exists := args["autoBackgroundSeconds"]
+	if !exists {
+		return 0, false
+	}
+	switch value := raw.(type) {
+	case float64:
+		if value >= 1 {
+			return int(value), true
+		}
+	case int:
+		if value >= 1 {
+			return value, true
+		}
+	case int64:
+		if value >= 1 {
+			return int(value), true
+		}
+	}
+	return 0, false
+}
+
+// startBackgroundWait 先同步等最多 seconds 秒：窗口内完成直接返回结果，
+// 超窗转进程内后台任务并返回 taskId（用 aplm_task get 兜底查询）。
+func (m *Manager) startBackgroundWait(req Request, seconds int) Result {
+	accepted := m.startBackground(req)
+	if !accepted.Success || accepted.TaskID == "" {
+		return accepted
+	}
+	deadline := time.Now().Add(time.Duration(seconds) * time.Second)
+	for time.Now().Before(deadline) {
+		time.Sleep(100 * time.Millisecond)
+		m.tasksMu.RLock()
+		state, exists := m.tasks[accepted.TaskID]
+		var status string
+		var result Result
+		if exists {
+			status = state.Status
+			result = state.Result
+		}
+		m.tasksMu.RUnlock()
+		if !exists {
+			break
+		}
+		switch status {
+		case "completed", "failed", "timeout", "cancelled":
+			result.TaskID = accepted.TaskID
+			return result
+		}
+	}
+	accepted.Message = "超过等待窗口仍未完成，已转进程内后台任务继续执行；用 aplm_task get 取结果"
+	accepted.Data = map[string]any{"status": "running", "waitedSeconds": seconds}
+	accepted.Strategy = "detached_after_wait"
+	return accepted
+}
+
+// TaskView 返回进程内后台任务的快照。持久任务查不到时由 service 兜底调用。
+func (m *Manager) TaskView(id string) (any, bool) {
+	m.tasksMu.RLock()
+	defer m.tasksMu.RUnlock()
+	state, exists := m.tasks[id]
+	if !exists {
+		return nil, false
+	}
+	return snapshotTask(state), true
 }
 
 func copyArgs(in map[string]any) map[string]any {
