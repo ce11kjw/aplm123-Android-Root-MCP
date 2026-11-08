@@ -9,15 +9,17 @@ _（2026-11-05）_
 - **`aplm_network http` 的 `headersMode`（safe / full）**。此前响应头只回显
   14 个白名单字段，`Location`、`Link` 这类**显式**打码，`Set-Cookie`、
   `Mcp-Session-Id`、`ETag`、`WWW-Authenticate` 全部丢失——调试需要读它们时
-  只能绕道调用 shell 里的 wget。
+  只能绕道调用 shell 里的 wget，实测被卡住过两次。
 
   `full` 模式保留全部头部原值，**只**对 `Set-Cookie` 的值打码（凭据不是语义
   元数据）。默认仍是 `safe`，行为不变。
 
-- **`aplm_shell` / `aplm_script` 的 `autoBackgroundSeconds`（自动后台化）**。
-  移动端 MCP 客户端通常几十秒就掐断请求，长命令硬等只会白跑一次。
-  现在可以声明"最多同步等 N 秒"：窗口内完成直接返回结果，超窗自动转后台
-  并返回 `taskId`，用 `aplm_task get` 取后续输出。
+### 说明
+
+- 本轮曾计划加 `autoBackgroundSeconds`（长命令超窗自动转后台），实现完成后
+  按需求撤下：`shell` / `script` 的命令文本不在「可持久化参数白名单」内，
+  持久任务走不通；而进程内后台任务会额外增加一套任务查询路径，收益不足以
+  抵掉复杂度。需要长任务时仍用 `background: true`（受同一策略限制）。
 
 ## 0.10
 

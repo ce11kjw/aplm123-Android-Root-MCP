@@ -240,11 +240,5 @@ func (m *Manager) Execute(ctx context.Context, req Request) (result Result) {
 	if background, _ := argBool(req.Args, "background", false); background && !isTaskControl(req.Tool) {
 		return m.startBackground(req)
 	}
-	// 自动后台化：先等一个窗口，超窗再转进程内后台任务。
-	// 用途是 shell/script —— 它们的命令文本不允许落盘，进不了持久任务队列，
-	// 只能用进程内任务兜住客户端超时（进程重启即丢，符合安全策略）。
-	if seconds, ok := autoBackgroundSeconds(req.Args); ok && !isTaskControl(req.Tool) {
-		return m.startBackgroundWait(req, seconds)
-	}
 	return m.executeSync(ctx, req)
 }

@@ -8621,11 +8621,6 @@
             ],
             "type": "string"
           },
-          "autoBackgroundSeconds": {
-            "description": "等待窗口（秒）：超过该时间仍未完成就转后台继续执行并返回 taskId，避免客户端请求超时。",
-            "minimum": 1,
-            "type": "integer"
-          },
           "background": {
             "description": "是否转为持久后台任务执行。",
             "type": "boolean"
@@ -9506,11 +9501,6 @@
               "exec"
             ],
             "type": "string"
-          },
-          "autoBackgroundSeconds": {
-            "description": "等待窗口（秒）：超过该时间仍未完成就转后台继续执行并返回 taskId，避免客户端请求超时。",
-            "minimum": 1,
-            "type": "integer"
           },
           "background": {
             "description": "是否转为持久后台任务执行。",
