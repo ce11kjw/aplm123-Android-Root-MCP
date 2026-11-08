@@ -1,5 +1,26 @@
 # 更新日志
 
+## 0.12
+
+_（2026-11-05）_
+
+### 新增
+
+- **模块在线更新（`updateJson`）**。`module.prop` 新增：
+
+  ```
+  updateJson=https://github.com/ce11kjw/aplm123-Android-Root-MCP/releases/latest/download/update.json
+  ```
+
+  APatch / Magisk / KernelSU 的管理器都会读这个字段：远端 `versionCode`
+  比本地大时，模块卡片上直接出现更新按钮，点一下就能装新版，不用再手抄
+  链接。
+
+  免维护做法：`update.json` 由 CI 在**打 tag 时生成**并随 Release 上传，
+  里面的 `zipUrl` / `changelog` 都按当前 tag 拼；`module.prop` 又固定指向
+  `releases/latest/download/update.json`，所以以后只要打 tag 就行，
+  不用手改 JSON、不用改地址。
+
 ## 0.11
 
 _（2026-11-05）_

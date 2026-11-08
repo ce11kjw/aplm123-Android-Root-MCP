@@ -1,6 +1,7 @@
 id=aplm123.root.mcp
 name=aplm123 Root MCP
-version=0.11
-versionCode=2026110502
+version=0.12
+versionCode=2026110503
 author=@aplm123
 description=通用 root MCP 扩展，内置管理器 WebUI 与浏览器控制台（让AI管理手机）
+updateJson=https://github.com/ce11kjw/aplm123-Android-Root-MCP/releases/latest/download/update.json
