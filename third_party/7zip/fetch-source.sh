@@ -32,14 +32,29 @@ download_archive() {
   temporary="$destination.tmp.$$"
   rm -f "$temporary"
 
-  if command -v curl >/dev/null 2>&1; then
-    curl --fail --location --proto '=https' --tlsv1.2 \
-      --output "$temporary" "$SEVENZIP_URL"
-  elif command -v wget >/dev/null 2>&1; then
-    wget --https-only --output-document="$temporary" "$SEVENZIP_URL"
-  else
-    fail "缺少 curl 或 wget，无法下载 7-Zip 源码"
-  fi
+  # GitHub release 资源偶尔会回 504/连接重置，单次失败就让整个构建挂掉太脆。
+  # 这里做 3 次退避重试，并给足超时与连接超时。
+  attempt=1
+  delay=5
+  while : ; do
+    if command -v curl >/dev/null 2>&1; then
+      curl --fail --location --proto '=https' --tlsv1.2 \
+        --connect-timeout 20 --max-time 300 --retry 2 --retry-delay 3 \
+        --output "$temporary" "$SEVENZIP_URL" && break || true
+    elif command -v wget >/dev/null 2>&1; then
+      wget --https-only --tries=3 --timeout=60 \
+        --output-document="$temporary" "$SEVENZIP_URL" && break || true
+    else
+      fail "缺少 curl 或 wget，无法下载 7-Zip 源码"
+    fi
+    if [ "$attempt" -ge 3 ]; then
+      fail "下载 7-Zip 源码失败（已重试 3 次）：$SEVENZIP_URL"
+    fi
+    printf '下载失败，%s 秒后重试（第 %s 次）\n' "$delay" "$attempt" >&2
+    sleep "$delay"
+    delay=$((delay * 2))
+    attempt=$((attempt + 1))
+  done
 
   actual=$(sha256_file "$temporary")
   [ "$actual" = "$SEVENZIP_SHA256" ] ||
