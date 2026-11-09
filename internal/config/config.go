@@ -125,7 +125,7 @@ func Default() Config {
 			ShutdownGraceSeconds:  15,
 			UploadIdleTTLSeconds:  86400,
 			DownloadRetryAttempts: 4,
-			CompactResultText:     ResultTextAuto,
+			CompactResultText:     ResultTextOff,
 		},
 		Security: Security{
 			Anonymous:       true,
@@ -279,8 +279,11 @@ func Save(path string, cfg Config) error {
 // normalized representation that is written to disk.
 func Normalize(cfg Config) Config {
 	derivePaths(&cfg)
+	// 缺该字段的旧配置一律补 off：默认给完整结果。
+	// 精简（auto/on）是省 token 的优化项，必须由用户显式选择，
+	// 否则客户端换了协议就会突然只拿到「OK: 消息」，看起来像工具坏了。
 	if cfg.Limits.CompactResultText == "" {
-		cfg.Limits.CompactResultText = ResultTextAuto
+		cfg.Limits.CompactResultText = ResultTextOff
 	}
 	return cfg
 }

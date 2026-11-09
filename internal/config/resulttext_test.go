@@ -2,10 +2,10 @@ package config
 
 import "testing"
 
-func TestCompactResultTextDefaultsToAuto(t *testing.T) {
+func TestCompactResultTextDefaultsToFull(t *testing.T) {
 	cfg := Normalize(Default())
-	if cfg.Limits.CompactResultText != ResultTextAuto {
-		t.Fatalf("默认应为 %q，得到 %q", ResultTextAuto, cfg.Limits.CompactResultText)
+	if cfg.Limits.CompactResultText != ResultTextOff {
+		t.Fatalf("默认应为 %q（完整结果），得到 %q", ResultTextOff, cfg.Limits.CompactResultText)
 	}
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("默认配置应通过校验: %v", err)
@@ -34,7 +34,7 @@ func TestCompactResultTextRejectsUnknownValue(t *testing.T) {
 func TestCompactResultTextNormalizeFillsEmpty(t *testing.T) {
 	cfg := Default()
 	cfg.Limits.CompactResultText = ""
-	if got := Normalize(cfg).Limits.CompactResultText; got != ResultTextAuto {
-		t.Fatalf("空值应归一化为 %q，得到 %q", ResultTextAuto, got)
+	if got := Normalize(cfg).Limits.CompactResultText; got != ResultTextOff {
+		t.Fatalf("空值应归一化为 %q（完整结果），得到 %q", ResultTextOff, got)
 	}
 }
