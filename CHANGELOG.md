@@ -1,5 +1,31 @@
 # 更新日志
 
+## 0.14
+
+_（2026-11-09）_
+
+### 新增
+
+- **模块热更新：装完不用重启手机**。在 APatch 里点更新或刷入新 zip 后，
+  约 10~20 秒自动生效，服务中断十几秒，MCP 客户端重连一次即可。
+
+  做法参考同作者的 ChargeControl：`customize.sh` 收尾时 `nohup` 拉起
+  `update.sh <解压目录>`，由它在安装器退出后执行：
+
+  1. 等解压目录大小连续两次不变（判据是「安装器写完」，不能靠 `$PPID`
+     —— `nohup` 后进程立刻被 init 收养，`$PPID` 恒为 1）
+  2. 停旧进程（`pkill -x aplm123d`，TERM 后 15 秒仍在就 KILL）
+  3. 备份并整体替换模块目录 —— 备份放 `/data/adb/aplm-mcp-backup`，
+     **不能放 `modules/` 下**：管理器用 `module.prop` 的 id 当列表 key，
+     同 id 两份会让 APatch 直接崩
+  4. 用新目录的 `service.sh` 拉起
+  5. 轮询 `/version` 做健康检查，25 秒不通过就用备份**自动回滚**
+  6. 全程写 `/data/adb/aplm123-mcp/logs/hot-update.log`
+
+  配置、日志、任务记录都在 `/data/adb/aplm123-mcp`，不在替换范围。
+  旧的「下载 + `apd module install` + 重启设备」脚本已替换（那个脚本还指着
+  早已不存在的旧仓库 `32463991/aplm123-AI-MCP`，本来就跑不通）。
+
 ## 0.13
 
 _（2026-11-09）_
