@@ -129,6 +129,19 @@
     <button id="drop">断开长连接</button>
   </div>
 
+  <h2>工具输出</h2>
+  <div class="card">
+    <ul class="list">
+      <li><span class="k">当前形态</span><span class="v mono" id="outMode">—</span></li>
+      <li><span class="k">生效情况</span><span class="v" id="outDesc">—</span></li>
+    </ul>
+    <div class="actions">
+      <button class="primary" id="outFull">完整 JSON</button>
+      <button id="outAuto">跟随协议</button>
+      <button id="outCompact">只回 OK</button>
+    </div>
+  </div>
+
   <h2>输出</h2>
   <pre id="out">等待操作…</pre>
 
@@ -500,6 +513,53 @@ bind("drop", async () => {
 
 // 启动
 refreshAll();
+</script>
+<script>
+// 工具输出形态开关：服务端 /api/output（GET 读 / POST 改）。
+// 本页 origin 不是 127.0.0.1:5322，fetch 会被 CORS 拦，走 exec 桥 + busybox wget。
+(function () {
+  var MCP = "http://127.0.0.1:5322";
+  var BB = "/data/adb/ap/bin/busybox";
+  if (typeof bridgeExec !== "function") return;
+
+  function mcpGet(path) {
+    return bridgeExec(BB + " wget -q -O - " + MCP + path).then(function (r) {
+      return (r && r.stdout) || "";
+    });
+  }
+  function mcpPost(path, payload) {
+    var body = "'" + JSON.stringify(payload).replace(/'/g, "'\\''") + "'";
+    var cmd = BB + " wget -q -O - --header='Content-Type: application/json' --post-data=" +
+              body + " " + MCP + path;
+    return bridgeExec(cmd).then(function (r) { return (r && r.stdout) || ""; });
+  }
+  function txt(id, value) { var el = document.getElementById(id); if (el) el.textContent = value; }
+  function render(view) {
+    if (!view) return;
+    txt("outMode", view.compactResultText || "—");
+    txt("outDesc", view.effective || "—");
+  }
+  function load() {
+    mcpGet("/api/output").then(function (raw) {
+      try { render(JSON.parse(raw).output); } catch (e) { txt("outDesc", "解析失败"); }
+    }).catch(function (e) { txt("outDesc", "读取失败：" + e.message); });
+  }
+  function apply(mode, label) {
+    txt("outDesc", "正在切换为 " + label + "…");
+    mcpPost("/api/output", { compactResultText: mode }).then(function (raw) {
+      try {
+        var data = JSON.parse(raw);
+        if (data && data.ok) { render(data.output); txt("outDesc", (data.message || "已切换") + "：" + label); }
+        else { txt("outDesc", "切换失败：" + raw); }
+      } catch (e) { txt("outDesc", "切换失败：" + raw); }
+    }).catch(function (e) { txt("outDesc", "切换失败：" + e.message); });
+  }
+  function on(id, fn) { var el = document.getElementById(id); if (el) el.addEventListener("click", fn); }
+  on("outFull", function () { apply("off", "完整 JSON"); });
+  on("outAuto", function () { apply("auto", "跟随协议"); });
+  on("outCompact", function () { apply("on", "只回 OK"); });
+  load();
+})();
 </script>
 </body>
 </html>
