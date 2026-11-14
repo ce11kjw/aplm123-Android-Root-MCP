@@ -311,3 +311,35 @@ curl -X POST http://127.0.0.1:5322/mcp \
 # 有多处提前返回（目录不可建、二进制不可执行、锁被占等），
 # 这些错误必须能从 boot.log 读到，否则启动失败时毫无痕迹。
 ```
+
+### `module/update.sh`
+
+热更新脚本，由 `customize.sh` 收尾时后台拉起。维护前务必理解以下四点，
+它们是实际故障换来的：
+
+```
+1) 绝不用 mv 替换整个模块目录。
+   Root 管理器（Magisk / KernelSU / APatch）按路径记录模块状态与开机自启
+   登记。把 MOD_DIR 整目录挪走再挪回来，会让这些引用失效，表现为
+   「装上了但起不来」——模块列表里看着在，实际开机不拉起。
+   这里一律逐文件覆盖，模块目录就地更新。
+
+2) 健康检查必须校验 /version 的版本号，不能只看进程存活。
+   崩溃重启的进程同样有 pid，只看 pid 会把失败误判成成功，从而跳过回滚。
+
+3) busybox 要多路径探测。
+   开机 early stage PATH 里可能没有 busybox；APatch / KernelSU / Magisk
+   三家的自带位置不同。
+
+4) 任何失败都要能逐文件还原到更新前状态，并重新拉起旧版本。
+```
+
+其余实现要点：
+
+- 等源目录大小连续两次不变，才认为安装器写完（不能靠 PPID，nohup
+  后进程立刻被 init 收养，PPID 恒为 1）。
+- 二进制按 bin/<abi>/ 取，部署到 bin/ 根后清理 ABI 子目录。
+- 二进制用 .new 加 mv 原子替换，避免写到一半的坏二进制被启动。
+- 备份目录固定在 /data/adb/aplm-hotupdate-backup，不能放 modules/ 下：
+  管理器用 module.prop 的 id 当列表 key，同 id 两份会让 APatch 崩。
+- 全程写 /data/adb/aplm123-mcp/logs/hot-update.log。
