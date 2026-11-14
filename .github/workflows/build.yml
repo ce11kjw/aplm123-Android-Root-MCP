@@ -80,7 +80,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: aplm123-Android-Root-MCP-v${{ steps.ver.outputs.version }}
+          # build job 里算出的版本号在 release job 中不可见（跨 job 需 outputs），
+          # 这里用 pattern 匹配，避免重复解析 module.prop 或依赖 job 间传值。
+          pattern: aplm123-Android-Root-MCP-v*
+          merge-multiple: true
           path: dist
       - name: Generate update metadata
         # APatch / Magisk / KernelSU 的「检查更新」都读 module.prop 的 updateJson。
