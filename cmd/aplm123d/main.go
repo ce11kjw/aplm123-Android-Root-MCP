@@ -210,6 +210,8 @@ func runServe(arguments []string) error {
 		DialTimeout:     5 * time.Second,
 		MaxResponseSize: max(cfg.Limits.MaxRequestBytes, 16<<20),
 	}
+	// 结果文本形态：auto（默认）跟随协议，on/off 强制精简或完整。
+	mcpapi.SetResultTextMode(cfg.Limits.CompactResultText)
 	api, err := mcpapi.New(rootClient)
 	if err != nil {
 		return err
@@ -261,6 +263,7 @@ func runServe(arguments []string) error {
 		StreamIdleTimeout:  time.Duration(cfg.Limits.StreamIdleTTLSeconds) * time.Second,
 		UploadTTL:          time.Duration(cfg.Limits.UploadIdleTTLSeconds) * time.Second,
 		ArtifactTTL:        time.Duration(cfg.Limits.ArtifactTTLSeconds) * time.Second,
+		ResultTextMode:     cfg.Limits.CompactResultText,
 	})
 	if err != nil {
 		return err
@@ -282,6 +285,30 @@ func runServe(arguments []string) error {
 			return err
 		}
 		return config.Save(*configPath, updated)
+	})
+
+	// 面板的输出形态开关：写回配置并立即改变结果拼装方式，无需重启。
+	public.SetOutputApplier(func(change frontend.OutputChange) (string, error) {
+		if change.CompactResultText == nil {
+			return "", nil
+		}
+		updated := cfg
+		updated.Limits.CompactResultText = *change.CompactResultText
+		if err := updated.Validate(); err != nil {
+			return "", err
+		}
+		// 主配置在 stateDir 下；前端以非 root 运行时写不动它，
+		// 那时退化为只写本次运行副本，并如实告知「重启后失效」。
+		warning := ""
+		if err := config.Save(filepath.Join(*stateDir, "config.json"), updated); err != nil {
+			if runErr := config.Save(*configPath, updated); runErr != nil {
+				return "", fmt.Errorf("保存配置失败: %w", err)
+			}
+			warning = "主配置不可写（服务以非 root 运行），本次改动在重启后失效"
+		}
+		cfg = updated
+		mcpapi.SetResultTextMode(*change.CompactResultText)
+		return warning, nil
 	})
 	api.SetPublisher(func(path, name, sha256 string, ttl time.Duration) (model.Artifact, error) {
 		artifact, err := public.PublishFile(path, name, sha256, ttl)

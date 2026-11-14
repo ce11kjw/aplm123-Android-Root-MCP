@@ -52,7 +52,11 @@ type Server struct {
 	// applySecurity 由 service 层注入：把面板上的三个开关写回配置文件。
 	// 为 nil 表示当前运行模式不支持在线修改（例如测试构造的 Server）。
 	applySecurity func(SecurityChange) error
-	// mu 保护 access 里的认证开关，使其能在运行期被面板修改。
+	// applyOutput 由 service 层注入：把面板上的输出形态写回配置文件。
+	applyOutput func(OutputChange) (string, error)
+	// resultTextMode 是运行期的结果文本形态；为空表示沿用 options 的初始值。
+	resultTextMode string
+	// mu 保护 access 里的认证开关与运行期可变设置。
 	mu sync.Mutex
 }
 
@@ -70,6 +74,7 @@ func (s *Server) SetSecurityApplier(fn func(SecurityChange) error) {
 	s.applySecurity = fn
 	s.mu.Unlock()
 }
+
 
 // New validates all mandatory integration points and constructs a frontend.
 func New(options Options) (*Server, error) {
@@ -195,6 +200,9 @@ func (s *Server) routes() {
 	// 监听范围需重启（监听器已绑定，不能热切换）。
 	s.mux.HandleFunc("/api/security", exactPath("/api/security", s.securityDispatch))
 	s.mux.HandleFunc("/api/token/rotate", exactPath("/api/token/rotate", s.handleTokenRotate))
+	// 输出形态开关：决定工具返回「OK: 消息」短文本还是完整 JSON。
+	// 改完立即生效，无需重启。
+	s.mux.HandleFunc("/api/output", exactPath("/api/output", s.outputDispatch))
 	s.mux.HandleFunc("/transfer/uploads/", s.transfers.handleUpload)
 	s.mux.HandleFunc("/transfer/files/", s.transfers.handleDownload)
 	s.mux.Handle("/", webui.New())

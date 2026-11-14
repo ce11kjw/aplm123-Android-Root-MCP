@@ -200,7 +200,7 @@ var toolParameters = map[string][]string{
 	"aplm_power":           {"delayMs", "confirmDangerous"},
 	"aplm_screen":          {"path", "output", "duration", "seconds", "bitRate", "background"},
 	"aplm_input":           {"x", "y", "x1", "y1", "x2", "y2", "durationMs", "text", "value", "key", "code"},
-	"aplm_network":         {"host", "name", "port", "count", "timeout", "timeoutMs", "url", "method", "body", "headers", "maxResponseBytes", "enabled", "mode", "jar", "includeValues", "confirmSensitive", "confirmDangerous", "value", "cookiePath", "domain", "secure", "httpOnly", "maxAge", "maxItems", "offset", "maxChars", "renderWaitMs", "user", "connectionId", "message", "binaryBase64", "maxMessageBytes", "subprotocols", "reason"},
+	"aplm_network":         {"host", "name", "port", "count", "timeout", "timeoutMs", "url", "method", "body", "headers", "maxResponseBytes", "enabled", "mode", "jar", "includeValues", "confirmSensitive", "confirmDangerous", "value", "cookiePath", "domain", "secure", "httpOnly", "maxAge", "maxItems", "offset", "maxChars", "renderWaitMs", "user", "connectionId", "message", "binaryBase64", "maxMessageBytes", "subprotocols", "reason", "headersMode"},
 	"aplm_log":             {"follow", "lines", "timeout", "timeoutMs", "path", "target", "background"},
 	"aplm_diagnostics":     {"path", "output", "background"},
 	"aplm_schedule":        {"id", "scheduleId", "name", "type", "tool", "targetTool", "targetArgs", "command", "enabled", "retryCount", "retries", "retryDelaySeconds", "at", "everySeconds", "intervalSeconds", "time", "weekday", "cron", "expression"},
@@ -468,6 +468,7 @@ func parameterCatalog() map[string]any {
 		"arguments":               stringArray("Binder transaction 参数数组。"),
 		"at":                      map[string]any{"type": "string", "format": "date-time", "description": "一次性任务的未来 RFC3339 时间。"},
 		"auto":                    booleanValue("是否恢复系统自动模式。"),
+		"headersMode":           map[string]any{"type": "string", "enum": []string{"safe", "full"}, "description": "响应头回显策略：safe 只放行白名单（默认）；full 保留全部头部，仅对 Set-Cookie 的值打码。"},
 		"background":              booleanValue("是否转为持久后台任务执行。"),
 		"backup":                  pathValue("备份归档路径兼容别名。"),
 		"bitRate":                 integerValue("录屏码率，单位 bit/s。", 1),
@@ -757,6 +758,11 @@ func configInputSchema() map[string]any {
 					"shutdownGraceSeconds":  integer(1, 300, "优雅退出秒数。"),
 					"uploadIdleTtlSeconds":  integer(60, 2592000, "上传会话空闲有效秒数。"),
 					"downloadRetryAttempts": integer(0, 10, "下载重试次数。"),
+					"compactResultText": map[string]any{
+						"type":        "string",
+						"enum":        []string{"auto", "on", "off"},
+						"description": "工具结果文本形态：auto 跟随协议（默认）、on 始终只回「OK: 消息」、off 始终完整 JSON。",
+					},
 				},
 				"required": []string{
 					"maxConnections", "maxRequestBytes", "totalTasks", "heavyTasks",

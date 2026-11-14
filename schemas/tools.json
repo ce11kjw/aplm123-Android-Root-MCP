@@ -2848,6 +2848,15 @@
                     "minimum": 1,
                     "type": "integer"
                   },
+                  "compactResultText": {
+                    "description": "工具结果文本形态：auto 跟随协议（默认）、on 始终只回「OK: 消息」、off 始终完整 JSON。",
+                    "enum": [
+                      "auto",
+                      "on",
+                      "off"
+                    ],
+                    "type": "string"
+                  },
                   "downloadRetryAttempts": {
                     "description": "下载重试次数。",
                     "maximum": 10,
@@ -6778,6 +6787,14 @@
             },
             "description": "HTTP 请求头。",
             "type": "object"
+          },
+          "headersMode": {
+            "description": "响应头回显策略：safe 只放行白名单（默认）；full 保留全部头部，仅对 Set-Cookie 的值打码。",
+            "enum": [
+              "safe",
+              "full"
+            ],
+            "type": "string"
           },
           "host": {
             "description": "主机名或 IP 地址。",

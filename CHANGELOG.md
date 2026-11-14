@@ -1,5 +1,152 @@
 # 更新日志
 
+## 0.15
+
+_（2026-11-14）_
+
+### 修复
+
+- **热更新会让模块「装上了但起不来」**。0.14 的实现用 `mv` 把整个模块目录
+  挪去备份、再把新目录挪回来。Root 管理器（Magisk / KernelSU / APatch）按
+  路径记录模块状态与开机自启登记，整目录替换使这些引用失效。改为**逐文件
+  覆盖**，模块目录就地更新，不再搬动。
+
+- **热更新失败时回滚不生效**。原来的健康检查只判断 aplm123d 进程是否存在，
+  而崩溃重启的进程同样有 pid，会把失败误判成健康、跳过回滚。现在必须校验
+  `/version` 返回的版本号等于目标版本，否则逐文件还原并重新拉起旧版本。
+
+- **busybox 定位失败时健康检查静默降级**。改为按 APatch / KernelSU / Magisk
+  三条路径探测；确实没有 busybox 时明确记入日志，不再假装通过。
+
+### 内部
+
+- 修正 `scripts/bump-version.sh` 的三条校验规则。原规则要求 `action.sh` 与
+  `customize.sh` 写死当前版本号，但这两个脚本（以及 `verify_module.py` 的断言）
+  的设计就是从 `module.prop` 动态读取版本。两边自相矛盾，导致每次 bump 后
+  `--check` 必然报错。现在两边口径统一：动态读取才正确。
+
+
+## 0.14
+
+_（2026-11-09）_
+
+### 新增
+
+- **模块热更新：装完不用重启手机**。在 APatch 里点更新或刷入新 zip 后，
+  约 10~20 秒自动生效，服务中断十几秒，MCP 客户端重连一次即可。
+
+  做法参考同作者的 ChargeControl：`customize.sh` 收尾时 `nohup` 拉起
+  `update.sh <解压目录>`，由它在安装器退出后执行：
+
+  1. 等解压目录大小连续两次不变（判据是「安装器写完」，不能靠 `$PPID`
+     —— `nohup` 后进程立刻被 init 收养，`$PPID` 恒为 1）
+  2. 停旧进程（`pkill -x aplm123d`，TERM 后 15 秒仍在就 KILL）
+  3. 备份并整体替换模块目录 —— 备份放 `/data/adb/aplm-mcp-backup`，
+     **不能放 `modules/` 下**：管理器用 `module.prop` 的 id 当列表 key，
+     同 id 两份会让 APatch 直接崩
+  4. 用新目录的 `service.sh` 拉起
+  5. 轮询 `/version` 做健康检查，25 秒不通过就用备份**自动回滚**
+  6. 全程写 `/data/adb/aplm123-mcp/logs/hot-update.log`
+
+  配置、日志、任务记录都在 `/data/adb/aplm123-mcp`，不在替换范围。
+  旧的「下载 + `apd module install` + 重启设备」脚本已替换（那个脚本还指着
+  早已不存在的旧仓库 `32463991/aplm123-AI-MCP`，本来就跑不通）。
+
+## 0.13
+
+_（2026-11-09）_
+
+### 变更
+
+- **`limits.compactResultText` 的默认值改为 `off`（完整 JSON）**。
+
+  起因：RikkaHub 2.6+ 开始协商 MCP `2026-07-28`，而服务端对「最新协议」
+  默认走精简路径，工具结果只剩一句「OK: 命令执行成功」，看起来像工具坏了。
+  实测 3.1.2 装上后立刻复现。
+
+  改法：默认给完整结果，精简（`auto` / `on`）变成**显式选择**。旧配置里缺
+  这个字段的，`Normalize` 一律补 `off`。
+
+  ```
+  off   （新默认）完整 JSON
+  auto  跟随协议：只有 2026-07-28 客户端拿短文本
+  on    所有客户端都只拿「OK: 消息」
+  ```
+
+### 新增
+
+- **模块 WebUI 增加「工具输出」开关**。此前开关只在服务端面板
+  （`http://127.0.0.1:5322/ui`）里，而 APatch 管理器点「WebUI」打开的是
+  模块自带的 `webroot/index.html`，是另一个页面，所以在管理器里看不到。
+
+  现在管理器里直接有：当前形态 + 生效说明 + 三个按钮，点完立即生效。
+  实现走页面已有的 `exec` 桥 + busybox wget 打回环（服务端 `allowCors`
+  固定 `false`，直接 `fetch` 会被跨域拦）。
+
+## 0.12
+
+_（2026-11-05）_
+
+### 新增
+
+- **模块在线更新（`updateJson`）**。`module.prop` 新增：
+
+  ```
+  updateJson=https://github.com/ce11kjw/aplm123-Android-Root-MCP/releases/latest/download/update.json
+  ```
+
+  APatch / Magisk / KernelSU 的管理器都会读这个字段：远端 `versionCode`
+  比本地大时，模块卡片上直接出现更新按钮，点一下就能装新版，不用再手抄
+  链接。
+
+  免维护做法：`update.json` 由 CI 在**打 tag 时生成**并随 Release 上传，
+  里面的 `zipUrl` / `changelog` 都按当前 tag 拼；`module.prop` 又固定指向
+  `releases/latest/download/update.json`，所以以后只要打 tag 就行，
+  不用手改 JSON、不用改地址。
+
+## 0.11
+
+_（2026-11-05）_
+
+### 新增
+
+- **`aplm_network http` 的 `headersMode`（safe / full）**。此前响应头只回显
+  14 个白名单字段，`Location`、`Link` 这类**显式**打码，`Set-Cookie`、
+  `Mcp-Session-Id`、`ETag`、`WWW-Authenticate` 全部丢失——调试需要读它们时
+  只能绕道调用 shell 里的 wget，实测被卡住过两次。
+
+  `full` 模式保留全部头部原值，**只**对 `Set-Cookie` 的值打码（凭据不是语义
+  元数据）。默认仍是 `safe`，行为不变。
+
+### 说明
+
+- 本轮曾计划加 `autoBackgroundSeconds`（长命令超窗自动转后台），实现完成后
+  按需求撤下：`shell` / `script` 的命令文本不在「可持久化参数白名单」内，
+  持久任务走不通；而进程内后台任务会额外增加一套任务查询路径，收益不足以
+  抵掉复杂度。需要长任务时仍用 `background: true`（受同一策略限制）。
+
+## 0.10
+
+_（2026-11-05）_
+
+### 新增
+
+- **工具输出形态开关（`limits.compactResultText`）**。此前「精简」是隐式的：
+  客户端只要协商到最新协议（2026-07-28）就只收到 `OK: 消息` 一行，其他协议
+  收到完整 JSON；用户在界面上既无法选择，也无从判断当前是哪种。
+
+  现在改为显式三档：
+  - `auto`（默认，保持原有行为）：仅最新协议客户端拿到短文本
+  - `on`：所有客户端都只拿到短文本，完整结果仍在 `structuredContent`
+  - `off`：所有客户端都拿到完整 JSON
+
+  面板新增「工具输出」区块（`GET`/`POST /api/output`），改完**立即生效**，
+  无需重启；也可用 `aplm_config` 的 `limits.compactResultText` 字段设置。
+
+  设计取舍：`structuredContent` 始终是完整对象，开关只影响 `content` 里的
+  文本长度。所以切到 `on` 省的是上下文 token，不会丢数据；需要细节时仍然
+  可以从结构化对象取。
+
 ## 1.0
 
 _（2026-10-17）_

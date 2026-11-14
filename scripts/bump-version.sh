@@ -49,16 +49,16 @@ if [ "${1:-}" = "--check" ]; then
 
   printf '权威来源: %s  version=%s  versionCode=%s\n\n' "$PROP" "$VERSION" "$CODE"
 
-  # 1) action.sh 显示版本
-  grep -q "当前版本: $VERSION" "$ACTION" || note "$ACTION" "未同步（期望 当前版本: $VERSION）"
-  # 2) customize.sh 安装时显示版本（全角冒号）
-  grep -q "当前版本：$VERSION" "$CUSTOMIZE" || note "$CUSTOMIZE" "未同步（期望 当前版本：$VERSION）"
+  # 1) action.sh 必须从 module.prop 动态显示版本（不写死字面量）
+  grep -q '当前版本: \$zcr_version' "$ACTION" || note "$ACTION" "未动态显示版本（应为 当前版本: \$zcr_version）"
+  # 2) customize.sh 安装时动态显示版本（全角冒号）
+  grep -q '当前版本：\$zcr_version' "$CUSTOMIZE" || note "$CUSTOMIZE" "未动态显示版本（应为 当前版本：\$zcr_version）"
   # 3) verify_module.py 期望的 version
   grep -q "\"version=$VERSION" "$VERIFY" || note "$VERIFY" "version 期望值未同步"
   # 4) verify_module.py 期望的 versionCode
   grep -q "\"versionCode=$CODE" "$VERIFY" || note "$VERIFY" "versionCode 期望值未同步"
-  # 5) verify_module.py 对 action.sh 的断言
-  grep -q "当前版本: $VERSION" "$VERIFY" || note "$VERIFY" "action.sh 版本断言未同步"
+  # 5) verify_module.py 对 action.sh 的断言（动态版本）
+  grep -q '当前版本: \$zcr_version' "$VERIFY" || note "$VERIFY" "action.sh 动态版本断言缺失"
   # 6) buildinfo.go 默认版本
   grep -q "DefaultVersion    = \"$VERSION\"" "$BUILDINFO" || note "$BUILDINFO" "DefaultVersion 未同步"
   # 7) 构建脚本不应再硬编码版本（必须从 module.prop 读）
@@ -115,11 +115,9 @@ printf '版本更新: %s (%s)  →  %s (%s)\n\n' "$OLD_VERSION" "$OLD_CODE" "$NE
 sed -i "s/^version=.*/version=$NEW_VERSION/" "$PROP"
 sed -i "s/^versionCode=.*/versionCode=$NEW_CODE/" "$PROP"
 
-# 2) action.sh（半角冒号）
-sed -i "s/^zcr_print '当前版本: .*'/zcr_print '当前版本: $NEW_VERSION'/" "$ACTION"
+# 2) action.sh 从 module.prop 动态读取版本，无需改写
 
-# 3) customize.sh（全角冒号）
-sed -i "s|^zcr_ui \"- 当前版本：.*\"|zcr_ui \"- 当前版本：$NEW_VERSION\"|" "$CUSTOMIZE"
+# 3) customize.sh 从 module.prop 动态读取版本，无需改写
 
 # 4/5) verify_module.py 的期望值与断言
 python3 - "$VERIFY" "$NEW_VERSION" "$NEW_CODE" <<'PY'

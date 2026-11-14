@@ -155,4 +155,11 @@ chmod 0600 "$ZCR_INTERNAL_DIR/installed-framework" "$ZCR_INTERNAL_DIR/installed-
 zcr_ui "- 默认端口：5322"
 zcr_ui "- 工作目录：/storage/emulated/0/aplm123AI"
 zcr_ui "- MCP 地址文件：/data/adb/aplm123-mcp/MCP地址.txt"
-zcr_ui "- 安装完成，请重启设备"
+if [ -f "$MODPATH/update.sh" ]; then
+  chmod 0755 "$MODPATH/update.sh" 2>/dev/null
+  nohup sh "$MODPATH/update.sh" "$MODPATH" >/dev/null 2>&1 &
+  zcr_ui "- 热更新已排队：约 10-20 秒生效，无需重启手机"
+  zcr_ui "  日志：/data/adb/aplm123-mcp/logs/hot-update.log"
+else
+  zcr_ui "- 安装完成，请重启设备"
+fi

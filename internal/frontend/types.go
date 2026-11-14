@@ -87,4 +87,8 @@ type Options struct {
 	StreamIdleTimeout time.Duration
 	UploadTTL         time.Duration
 	ArtifactTTL       time.Duration
+
+	// ResultTextMode 是工具结果文本形态的初始值（对应 config 的
+	// limits.compactResultText）。运行期可被 /api/output 覆盖。
+	ResultTextMode string
 }
