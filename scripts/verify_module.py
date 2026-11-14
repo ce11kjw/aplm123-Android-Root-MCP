@@ -205,8 +205,8 @@ def main() -> None:
         expected_prop = (
             "id=aplm123.root.mcp\n"
             "name=aplm123 Root MCP\n"
-            f"version={prop_version}\n"
-            f"versionCode={prop_version_code}\n"
+            f"version=0.15\n"
+            f"versionCode=2026111401\n"
             "author=__AUTHOR__\n"
             "description=通用 root MCP 扩展，内置管理器 WebUI 与浏览器控制台（让AI管理手机）\n"
         )
