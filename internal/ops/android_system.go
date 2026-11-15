@@ -499,7 +499,7 @@ func (m *Manager) audioOperation(ctx context.Context, req Request) Result {
 		}
 		mode = normalizeTool(mode)
 		if mode != "" && mode != "get" && mode != "status" {
-			return unsupported("Android 26-36 没有跨版本稳定的通用音频路由写接口；route 当前仅安全读取实际 AudioService 路由")
+			return unsupported("Android 没有跨版本稳定的通用音频路由写接口；route 当前仅安全读取实际 AudioService 路由")
 		}
 		result := m.runAndroid(ctx, commandVariant{Name: "dumpsys", Args: []string{"audio"}, Strategy: "dumpsys_audio_route"})
 		if result.Success {

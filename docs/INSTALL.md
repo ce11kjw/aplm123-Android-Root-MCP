@@ -2,7 +2,7 @@
 
 ## 前置条件
 
-- Android 8.0 / API 26 或更高。
+- Android 8.0 / API 26 或更高。API 37+ 同样可安装，但未做逐命令验证（见 `docs/COMPATIBILITY.md`）。
 - 已安装 Magisk、KernelSU/KernelSU Next，或 ARM64 设备上的 APatch。
 - 安装包必须是正式版本中唯一的资源 `aplm123-Android-Root-MCP-v0.02-universal.zip`。
 

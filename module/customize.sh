@@ -38,8 +38,8 @@ case "$zcr_api" in
     zcr_abort "无法识别 Android API Level"
     ;;
 esac
-[ "$zcr_api" -ge 26 ] && [ "$zcr_api" -le 36 ] ||
-  zcr_abort "仅支持 Android API 26-36，当前 API=$zcr_api"
+[ "$zcr_api" -ge 26 ] ||
+  zcr_abort "需要 Android API 26 或更高，当前 API=$zcr_api"
 
 zcr_arch_source="${ARCH:-$(uname -m 2>/dev/null)}"
 case "$zcr_arch_source" in

@@ -285,7 +285,7 @@ func (m *Manager) screenOperation(ctx context.Context, req Request) Result {
 		}
 		duration, parseErr := argInt64(req.Args, 30, "duration", "seconds")
 		if parseErr != nil || duration <= 0 || duration > 180 {
-			return invalid("为兼容 API 26-36，录屏 duration 必须在 1 到 180 秒之间")
+			return invalid("录屏 duration 必须在 1 到 180 秒之间")
 		}
 		args := []string{"--time-limit", strconv.FormatInt(duration, 10)}
 		if size, ok := req.Args["size"].(string); ok && size != "" {
